@@ -409,9 +409,29 @@ const PACKAGES = [
 
 const COMMON_PREBAN = ['LIBRA_MASTER','HARSETI','YULHA','BELIAN','GIO','MORT','SECRET'];
 const EARLY_PICK_CORE = ['YULHA','LIBRA_MASTER','ORIGIN_RAS','DARK_DIEANE','ARUNKA','RUEL','FRIEREN','RINAK','ISEPUNISH_ARIA'];
-const LOG_FIRST_PICK_WIN_COUNTS = {DARK_DIEANE:3, ARUNKA:2, LIBRA_MASTER:2};
-const LOG_EARLY_PICK_WIN_COUNTS = {DARK_DIEANE:22, FRIEREN:20, ORIGIN_RAS:19, ISEPUNISH_ARIA:16, RUEL:13, ARUNKA:9, RINAK:8, LIBRA_MASTER:7, YULHA:7, BELIAN:4, SECRET:4, MORT:2, DEATH_RAY:1, ASHEN_ISERIA:1, SKY_ILLYNAV:1};
-const LOG_VANGUARD_WIN_COUNTS = {ASHEN_ISERIA:23, GHOST_POLITIS:6, HECKATE:5, RAN:4, RINAK:4, ELENA:2, GIO:2, YULHA:2, ISEPUNISH_ARIA:2, SKY_ILLYNAV:2, AMID:2, SELINE:2, MYTH_ACHATES:1, HARSETI:1, SEOLHWA:1, RUEL:1, ARUNKA:1, WOLF_PEIRA:1, DEVIL_RUA:1, SECRET:1, MOON_LUNA:1, MORT:1, FRIEREN:1};
+const LOG_ROLE_CONFIDENCE_STATS = {
+  first:{
+    ISEPUNISH_ARIA:{w:11,l:4,s:2,m:10}, ORIGIN_RAS:{w:10,l:2,s:5,m:7}, DARK_DIEANE:{w:10,l:15,s:6,m:4}, LIBRA_MASTER:{w:6,l:3,s:4,m:3},
+    ARUNKA:{w:6,l:3,s:3,m:5}, YULHA:{w:4,l:17,s:7,m:2}, FRIEREN:{w:1,l:2,s:3,m:1}
+  },
+  early:{
+    FRIEREN:{w:17,l:9,s:4,m:15}, DARK_DIEANE:{w:16,l:16,s:6,m:10}, ISEPUNISH_ARIA:{w:15,l:7,s:5,m:12}, ORIGIN_RAS:{w:14,l:7,s:5,m:9},
+    ARUNKA:{w:8,l:7,s:6,m:5}, RINAK:{w:7,l:11,s:4,m:4}, LIBRA_MASTER:{w:6,l:3,s:4,m:3}, YULHA:{w:5,l:22,s:8,m:2},
+    BELIAN:{w:3,l:3,s:3,m:2}, DEATH_RAY:{w:1,l:0,s:1,m:1}, MORT:{w:1,l:2,s:2,m:1}, ASHEN_ISERIA:{w:1,l:2,s:2,m:1}, SECRET:{w:1,l:3,s:2,m:1}, SKY_ILLYNAV:{w:1,l:7,s:3,m:1}
+  },
+  vanguard:{
+    ASHEN_ISERIA:{w:23,l:8,s:7,m:16}, HECKATE:{w:5,l:1,s:3,m:3}, GHOST_POLITIS:{w:5,l:3,s:3,m:3}, SECRET:{w:4,l:0,s:3,m:2},
+    RINAK:{w:4,l:13,s:5,m:3}, RAN:{w:3,l:0,s:2,m:2}, AMID:{w:2,l:0,s:1,m:2}, ELENA:{w:2,l:3,s:2,m:2}, GIO:{w:2,l:4,s:3,m:1},
+    MORT:{w:2,l:6,s:3,m:1}, ISEPUNISH_ARIA:{w:2,l:6,s:5,m:1}, DEVIL_RUA:{w:1,l:0,s:1,m:1}, ARUNKA:{w:1,l:0,s:1,m:1}, TENEBRIA:{w:1,l:0,s:1,m:1},
+    WOLF_PEIRA:{w:1,l:0,s:1,m:1}, SEOLHWA:{w:1,l:1,s:1,m:1}, HARSETI:{w:1,l:1,s:2,m:1}, BABY_SHENNA:{w:1,l:1,s:2,m:1}, MYTH_ACHATES:{w:1,l:1,s:1,m:1},
+    SELINE:{w:1,l:1,s:2,m:1}, VERONICA:{w:1,l:2,s:3,m:1}, FRIEREN:{w:1,l:3,s:4,m:1}, SKY_ILLYNAV:{w:1,l:3,s:3,m:1}, BELIAN:{w:1,l:5,s:2,m:1}
+  }
+};
+const LOG_ROLE_CONFIDENCE_CONFIG = {
+  first:{sampleCap:12, minSamples:3, minWins:2, threshold:0.44},
+  early:{sampleCap:22, minSamples:5, minWins:3, threshold:0.41},
+  vanguard:{sampleCap:18, minSamples:4, minWins:2, threshold:0.39}
+};
 const OPEN_COUNTER_RISKS = [
   {target:'RAN', counters:['GIO'], weight:9.5, note:'지오 오픈 시 란 선턴 안정성 급감'},
   {target:'FRIEREN', counters:['GIO'], weight:4.6, note:'지오 오픈 시 프리렌 템포 리스크'},
@@ -539,27 +559,42 @@ function earlyPickValue(candidate, myPicks, oppPicks){
   if(candidate.pick >= 28) score += 1.4;
   return score;
 }
+function roleLogConfidence(roleKey, stats){
+  if(!stats) return 0;
+  const config = LOG_ROLE_CONFIDENCE_CONFIG[roleKey];
+  if(!config) return 0;
+  const wins = stats.w || 0;
+  const losses = stats.l || 0;
+  const samples = wins + losses;
+  if(samples < config.minSamples || wins < config.minWins || wins <= losses) return 0;
+  const sampleScore = Math.min(1, Math.log1p(samples) / Math.log1p(config.sampleCap));
+  const edgeScore = Math.max(0, (wins - losses) / samples);
+  const sourceScore = Math.min(1, (stats.s || 0) / 6);
+  const winShare = wins > 0 ? ((stats.m || wins) / wins) : 1;
+  const concentrationPenalty = 1 - Math.min(0.80, Math.max(0, winShare - 0.34) * 1.55);
+  const confidence = sampleScore * 0.22 + edgeScore * 0.43 + sourceScore * 0.20 + concentrationPenalty * 0.15;
+  return confidence >= config.threshold ? Math.min(1, confidence) : 0;
+}
+function confidenceBonusFromRatio(confidence, threshold){
+  if(!confidence || confidence < threshold) return 0;
+  const normalized = Math.min(1, Math.max(0, (confidence - threshold) / (1 - threshold)));
+  return 2 + 3 * Math.pow(normalized, 1.15);
+}
 function turnScopedLogWinBonus(candidate, myPicks, stage){
   if(!candidate || !stage || stage.type!=='pick' || stage.side!=='me') return 0;
   const nextPickNumber = myPicks.length + 1;
-  if(nextPickNumber === 1 || nextPickNumber === 2){
-    const earlyWins = LOG_EARLY_PICK_WIN_COUNTS[candidate.id] || 0;
-    const firstWins = nextPickNumber === 1 ? (LOG_FIRST_PICK_WIN_COUNTS[candidate.id] || 0) : 0;
-    let bonus = 0;
-    if(earlyWins >= 18) bonus += 1.20;
-    else if(earlyWins >= 12) bonus += 0.95;
-    else if(earlyWins >= 7) bonus += 0.65;
-    else if(earlyWins >= 4) bonus += 0.35;
-    if(firstWins >= 3) bonus += 0.45;
-    else if(firstWins >= 2) bonus += 0.30;
-    return Math.min(1.45, bonus);
+  if(nextPickNumber === 1){
+    const firstConfidence = roleLogConfidence('first', LOG_ROLE_CONFIDENCE_STATS.first[candidate.id]);
+    const earlyConfidence = roleLogConfidence('early', LOG_ROLE_CONFIDENCE_STATS.early[candidate.id]) * 0.82;
+    return confidenceBonusFromRatio(Math.max(firstConfidence, earlyConfidence), LOG_ROLE_CONFIDENCE_CONFIG.first.threshold);
+  }
+  if(nextPickNumber === 2){
+    const earlyConfidence = roleLogConfidence('early', LOG_ROLE_CONFIDENCE_STATS.early[candidate.id]);
+    return confidenceBonusFromRatio(earlyConfidence, LOG_ROLE_CONFIDENCE_CONFIG.early.threshold);
   }
   if(nextPickNumber === 3){
-    const vanguardWins = LOG_VANGUARD_WIN_COUNTS[candidate.id] || 0;
-    if(vanguardWins >= 15) return 1.00;
-    if(vanguardWins >= 6) return 0.70;
-    if(vanguardWins >= 4) return 0.55;
-    if(vanguardWins >= 2) return 0.35;
+    const vanguardConfidence = roleLogConfidence('vanguard', LOG_ROLE_CONFIDENCE_STATS.vanguard[candidate.id]);
+    return confidenceBonusFromRatio(vanguardConfidence, LOG_ROLE_CONFIDENCE_CONFIG.vanguard.threshold);
   }
   return 0;
 }
@@ -644,11 +679,9 @@ function canSelect(heroId, stage){
   const hero = HERO_BY_ID[heroId];
   if(!hero) return false;
   if(stage.type==='preban'){
-    const mine = (state.stageData.myPrebans||[]).map(normalizeHeroId);
-    const opp = (state.stageData.oppPrebans||[]).map(normalizeHeroId);
     const bucket = (state.stageData[stage.key] || []).map(normalizeHeroId);
     if(bucket.length >= stage.count) return false;
-    return !mine.includes(heroId) && !opp.includes(heroId);
+    return !bucket.includes(heroId);
   }
   if(stage.type==='pick'){
     return !isLockedHero(heroId) && !isLockedHeroName(hero.name) && !pre.includes(heroId) && !picks.me.includes(heroId) && !picks.opp.includes(heroId);
@@ -933,6 +966,7 @@ function getAvailableHeroesForStage(stage){
   const pickedIds = new Set([...picks.me, ...picks.opp]);
   const pickedNames = new Set([...picks.me, ...picks.opp].map(id => canonicalHeroNameById(id)).filter(Boolean));
   return HEROES.filter(h => {
+    if(ALIAS_HERO_IDS.has(h.id)) return false;
     if(!h) return false;
     if(prebanIds.has(h.id)) return false;
     if(pickedIds.has(h.id)) return false;

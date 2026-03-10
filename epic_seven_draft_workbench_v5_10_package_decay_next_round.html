@@ -163,7 +163,7 @@
               <div id="myPrebanSlots"></div>
             </div>
             <div class="compactPreRow">
-              <div class="tiny">상대 프리밴 2</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div class="tiny">상대 프리밴 2</div><button id="oppPrebanSkipBtn" class="btn" style="padding:4px 8px;font-size:11px;">프리밴 스킵</button></div>
               <div id="oppPrebanSlots"></div>
             </div>
             <div class="compactPreRow">
@@ -495,6 +495,7 @@ const myPrebanStore = {
   first: [],
   second: []
 };
+let oppPrebanSkipEnabled = false;
 
 function initialState(side='first'){
   const stages = buildStages(side);
@@ -502,7 +503,7 @@ function initialState(side='first'){
   stages.forEach(s => stageData[s.key] = []);
   // 내 프리밴은 선픽/후픽 별도로 저장
   stageData.myPrebans = [...(myPrebanStore[side] || [])];
-  return { side, stages, stageIndex:0, stageData, search:'' };
+  return { side, stages, stageIndex:0, stageData, search:'', oppPrebanSkip: oppPrebanSkipEnabled };
 }
 
 let state = initialState('first');
@@ -512,19 +513,28 @@ function syncMyPrebansForCurrentSide(){
 }
 
 function currentStage(){ return state.stages[state.stageIndex] || null; }
+function filledEntries(arr){ return (arr||[]).filter(x => x !== null && x !== undefined); }
 function actualPrebans(){ return normalizeHeroIds([...(state.stageData.myPrebans||[]), ...(state.stageData.oppPrebans||[])]); }
 function allPickArrays(){
   const me = [], opp = [];
   state.stages.filter(s=>s.type==='pick').forEach(s => {
-    if(s.side==='me') me.push(...(state.stageData[s.key]||[]).map(normalizeHeroId));
-    else opp.push(...(state.stageData[s.key]||[]).map(normalizeHeroId));
+    const bucket = filledEntries(state.stageData[s.key]).map(normalizeHeroId);
+    if(s.side==='me') me.push(...bucket);
+    else opp.push(...bucket);
   });
   return {me: normalizeHeroIds(me), opp: normalizeHeroIds(opp)};
 }
+function getBoardSlots(side){
+  const slots = [];
+  state.stages.filter(s => s.type==='pick' && s.side===side).forEach(s => {
+    const bucket = state.stageData[s.key] || [];
+    for(let i=0; i<s.count; i++) slots.push(normalizeHeroId(bucket[i]));
+  });
+  return slots.slice(0, 5);
+}
 
 function getVanguard(side){
-  const picks = allPickArrays();
-  const arr = side==='me' ? picks.me : picks.opp;
+  const arr = getBoardSlots(side);
   return arr.length >= 3 ? arr[2] : null;
 }
 function vanguardFirstTurnPenalty(candidate, myPicks, oppPicks){
@@ -618,11 +628,22 @@ function isLockedHero(heroId){
 function isLockedHeroName(name){
   return lockedHeroNames().has((name || '').trim());
 }
-function stageFilled(stage){ return (state.stageData[stage.key]||[]).length >= stage.count; }
+function stageFilled(stage){
+  if(stage && stage.key==='oppPrebans' && state.oppPrebanSkip) return true;
+  return filledEntries(state.stageData[stage.key]).length >= stage.count;
+}
 function advanceStage(){ while(state.stageIndex < state.stages.length && stageFilled(state.stages[state.stageIndex])) state.stageIndex++; render(); }
 function setSide(side){
   syncMyPrebansForCurrentSide();
   state = initialState(side);
+  while(state.stageIndex < state.stages.length && stageFilled(state.stages[state.stageIndex])) state.stageIndex++;
+  render();
+}
+function toggleOppPrebanSkip(){
+  oppPrebanSkipEnabled = !oppPrebanSkipEnabled;
+  state.oppPrebanSkip = oppPrebanSkipEnabled;
+  if(state.oppPrebanSkip) state.stageData.oppPrebans = [];
+  state.stageIndex = 0;
   while(state.stageIndex < state.stages.length && stageFilled(state.stages[state.stageIndex])) state.stageIndex++;
   render();
 }
@@ -654,10 +675,12 @@ function chooseHero(heroId){
   if(!stage) return;
   const bucket = state.stageData[stage.key];
   if(!bucket) return;
-  if(bucket.length >= stage.count) return;
+  if(filledEntries(bucket).length >= stage.count) return;
   if(bucket.map(normalizeHeroId).includes(heroId)) return;
   if(!canSelect(heroId, stage)) return;
-  bucket.push(heroId);
+  const emptyIdx = bucket.findIndex(x => x === null || x === undefined);
+  if(emptyIdx >= 0) bucket[emptyIdx] = heroId;
+  else bucket.push(heroId);
   if(stage.key==='myPrebans') syncMyPrebansForCurrentSide();
   advanceStage();
 }
@@ -665,7 +688,9 @@ function chooseHero(heroId){
 function removeFromStage(key, heroId){
   heroId = normalizeHeroId(heroId);
   const arr = state.stageData[key] || [];
-  state.stageData[key] = arr.filter(x => normalizeHeroId(x) !== heroId);
+  const stage = state.stages.find(s => s.key === key);
+  if(stage && stage.type==='pick') state.stageData[key] = arr.map(x => normalizeHeroId(x) === heroId ? null : x);
+  else state.stageData[key] = arr.filter(x => normalizeHeroId(x) !== heroId);
   if(key==='myPrebans') syncMyPrebansForCurrentSide();
   const idx = state.stages.findIndex(s => s.key === key);
   if(idx >= 0 && idx < state.stageIndex) state.stageIndex = idx;
@@ -721,7 +746,7 @@ function nextMyPickLabel(){
 
 function remainingSlotsForStage(stage){
   if(!stage) return 0;
-  return Math.max(0, stage.count - ((state.stageData[stage.key]||[]).length));
+  return Math.max(0, stage.count - filledEntries(state.stageData[stage.key]).length);
 }
 
 function myBoardAfterCurrent(){ return allPickArrays().me; }
@@ -1092,7 +1117,9 @@ function renderPrebans(){
     ? actual.map(id=>`<span class="tinyChip ${overlapIds.includes(id)?'dup':''}">${HERO_BY_ID[id]?.name||id}</span>`).join('')
     : '<span class="tiny">아직 없음</span>';
   const overlap = overlapIds.length;
-  const text = `프리밴 실제 제외 ${actual.length}명 · 내 2 / 상대 2 · 중복 ${overlap}개`;
+  const text = `프리밴 실제 제외 ${actual.length}명 · 내 ${mine.length} / 상대 ${opp.length} · 중복 ${overlap}개`;
+  const skipBtn = document.getElementById('oppPrebanSkipBtn');
+  if(skipBtn) skipBtn.classList.toggle('activeBtn', !!state.oppPrebanSkip);
   document.getElementById('prebanCountPill').textContent = text;
   const inline = document.getElementById('prebanInlineText');
   if(inline) inline.textContent = `${text}${actual.length ? ' · ' + actual.map(id => HERO_BY_ID[id]?.name||id).join(', ') : ''}`;
@@ -1100,7 +1127,7 @@ function renderPrebans(){
 
 function renderBoard(){
   const picks = allPickArrays();
-  const my = picks.me, opp = picks.opp;
+  const my = getBoardSlots('me'), opp = getBoardSlots('opp');
   let myHtml='', oppHtml='';
   for(let i=0;i<5;i++) myHtml += slotHTML(my[i], findOwnerKeyByHero(my[i], 'me'), 'mine', i===2);
   for(let i=0;i<5;i++) oppHtml += slotHTML(opp[i], findOwnerKeyByHero(opp[i], 'opp'), 'opp', i===2);
@@ -1137,7 +1164,7 @@ function renderSteps(){
   const html = state.stages.map((s, idx) => {
     const done = stageFilled(s);
     const cls = idx===state.stageIndex ? 'current' : (done ? 'done' : '');
-    const arr = state.stageData[s.key]||[];
+    const arr = filledEntries(state.stageData[s.key]);
     const names = arr.map(id => HERO_BY_ID[id]?.name||id).join(', ');
     return `<div class="step ${cls}"><div><strong>${idx+1}. ${s.label}</strong></div><div class="tiny">${names || '미입력'}</div></div>`;
   }).join('');
@@ -1264,6 +1291,7 @@ if(updateNotesBtn && updateNotesPanel){
   };
 }
 document.getElementById('nextRoundBtn').onclick = nextRound;
+document.getElementById('oppPrebanSkipBtn').onclick = toggleOppPrebanSkip;
 document.getElementById('resetBtn').onclick = resetAll;
 document.getElementById('searchBox').addEventListener('input', e => { state.search = e.target.value; renderHeroGrid(); });
 

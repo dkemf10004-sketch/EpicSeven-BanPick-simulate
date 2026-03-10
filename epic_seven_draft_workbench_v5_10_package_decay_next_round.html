@@ -353,11 +353,19 @@ const FIRST_TURN_OPENERS = ['RINAK','RAN','GIO','ASHEN_ISERIA'];
 const NUANCED_COUNTERS = [
   {counter:'ASHEN_ISERIA', target:'MAID_CHLOE', weight:4.6, note:'메이드 클로에 복구 축 견제'},
   {counter:'ASHEN_ISERIA', target:'RUEL', weight:4.2, note:'루엘 보호 축 견제'},
-  {counter:'ASHEN_ISERIA', target:'YULHA', weight:3.8, note:'보건교사 율하 대응'},
+  {counter:'ASHEN_ISERIA', target:'YULHA', weight:4.8, note:'최신 로그 기준 율하 축 반복 견제'},
+  {counter:'ASHEN_ISERIA', target:'RINAK', weight:4.4, note:'최신 로그 기준 리나크 축 반복 압박'},
+  {counter:'ASHEN_ISERIA', target:'MORT', weight:4.0, note:'모르트 밴가드 축 대응'},
   {counter:'BELIAN', target:'DARK_DIEANE', weight:4.0, note:'어둠의 목자 디에네 대응'},
-  {counter:'BELIAN', target:'FRIEREN', weight:4.8, note:'프리렌 대응'}
+  {counter:'BELIAN', target:'FRIEREN', weight:4.8, note:'프리렌 대응'},
+  {counter:'ORIGIN_RAS', target:'BELIAN', weight:4.2, note:'최신 로그 기준 벨리안 상대로 반복 우세'},
+  {counter:'ORIGIN_RAS', target:'GIO', weight:3.9, note:'최신 로그 기준 지오 상대로 반복 우세'},
+  {counter:'DARK_DIEANE', target:'RINAK', weight:4.1, note:'최신 로그 기준 리나크 대응'},
+  {counter:'FRIEREN', target:'MORT', weight:4.3, note:'최신 로그 기준 모르트 상대로 반복 우세'},
+  {counter:'FRIEREN', target:'GIO', weight:3.5, note:'최신 로그 기준 지오 상대로 우세'},
+  {counter:'SEOLHWA', target:'ARUNKA', weight:3.6, note:'최신 로그 기준 아룬카 대응'},
+  {counter:'GHOST_POLITIS', target:'RINAK', weight:3.2, note:'최신 로그 기준 리나크 대응'}
 ];
-
 const PACKAGES = [
   {name:'디에네-루엘-기라스', members:['DARK_DIEANE','RUEL','ORIGIN_RAS'], weight:18},
   {name:'율하-기라스-창브', members:['YULHA','ORIGIN_RAS','SKY_ILLYNAV'], weight:17},
@@ -405,32 +413,36 @@ const PACKAGES = [
   {name:'프리렌-천칭-리나크', members:['FRIEREN','LIBRA_MASTER','RINAK'], weight:9},
   {name:'리나크-율하-아리아-아룬카', members:['RINAK','YULHA','ARIA','ARUNKA'], weight:9},
   {name:'디에네-기라스-유령 폴리티스', members:['DARK_DIEANE','ORIGIN_RAS','GHOST_POLITIS'], weight:9},
+  {name:'보세리아-프리렌-잿숲', members:['ISEPUNISH_ARIA','FRIEREN','ASHEN_ISERIA'], weight:11},
+  {name:'빌트레드-프리렌-잿숲', members:['VILDRED','FRIEREN','ASHEN_ISERIA'], weight:11},
+  {name:'잿숲-아룬카-프리렌', members:['ASHEN_ISERIA','ARUNKA','FRIEREN'], weight:11},
+  {name:'기라스-보세리아-루엘-세크레트', members:['ORIGIN_RAS','ISEPUNISH_ARIA','RUEL','SECRET'], weight:10},
+  {name:'사령관 파벨-잿숲-프리렌', members:['COMMANDER_PAVEL','ASHEN_ISERIA','FRIEREN'], weight:9}
 ];
-
 const COMMON_PREBAN = ['LIBRA_MASTER','HARSETI','YULHA','BELIAN','GIO','MORT','SECRET'];
-const EARLY_PICK_CORE = ['YULHA','LIBRA_MASTER','ORIGIN_RAS','DARK_DIEANE','ARUNKA','RUEL','FRIEREN','RINAK','ISEPUNISH_ARIA'];
+const EARLY_PICK_CORE = ['ORIGIN_RAS','DARK_DIEANE','FRIEREN','ISEPUNISH_ARIA','LIBRA_MASTER','RUEL','SECRET'];
 const LOG_ROLE_CONFIDENCE_STATS = {
   first:{
-    ISEPUNISH_ARIA:{w:11,l:4,s:2,m:10}, ORIGIN_RAS:{w:10,l:2,s:5,m:7}, DARK_DIEANE:{w:10,l:15,s:6,m:4}, LIBRA_MASTER:{w:6,l:3,s:4,m:3},
-    ARUNKA:{w:6,l:3,s:3,m:5}, YULHA:{w:4,l:17,s:7,m:2}, FRIEREN:{w:1,l:2,s:3,m:1}
+    DARK_DIEANE:{w:15,l:14,s:7,m:7}, ISEPUNISH_ARIA:{w:11,l:4,s:2,m:10}, YULHA:{w:11,l:20,s:7,m:6}, ORIGIN_RAS:{w:10,l:4,s:6,m:7},
+    ARUNKA:{w:7,l:7,s:3,m:5}, LIBRA_MASTER:{w:4,l:2,s:3,m:3}, SECRET:{w:1,l:2,s:1,m:1}, RINAK:{w:1,l:4,s:1,m:1}, FRIEREN:{w:1,l:4,s:1,m:1}
   },
   early:{
-    FRIEREN:{w:17,l:9,s:4,m:15}, DARK_DIEANE:{w:16,l:16,s:6,m:10}, ISEPUNISH_ARIA:{w:15,l:7,s:5,m:12}, ORIGIN_RAS:{w:14,l:7,s:5,m:9},
-    ARUNKA:{w:8,l:7,s:6,m:5}, RINAK:{w:7,l:11,s:4,m:4}, LIBRA_MASTER:{w:6,l:3,s:4,m:3}, YULHA:{w:5,l:22,s:8,m:2},
-    BELIAN:{w:3,l:3,s:3,m:2}, DEATH_RAY:{w:1,l:0,s:1,m:1}, MORT:{w:1,l:2,s:2,m:1}, ASHEN_ISERIA:{w:1,l:2,s:2,m:1}, SECRET:{w:1,l:3,s:2,m:1}, SKY_ILLYNAV:{w:1,l:7,s:3,m:1}
+    DARK_DIEANE:{w:21,l:15,s:7,m:8}, FRIEREN:{w:20,l:12,s:5,m:15}, ISEPUNISH_ARIA:{w:15,l:8,s:5,m:10}, ORIGIN_RAS:{w:15,l:11,s:6,m:9},
+    YULHA:{w:15,l:25,s:8,m:9}, ARUNKA:{w:10,l:13,s:7,m:5}, RINAK:{w:8,l:12,s:4,m:4}, SECRET:{w:5,l:5,s:2,m:5}, LIBRA_MASTER:{w:4,l:2,s:3,m:3},
+    SKY_ILLYNAV:{w:3,l:7,s:3,m:2}, BELIAN:{w:2,l:2,s:2,m:1}, DEATH_RAY:{w:1,l:0,s:1,m:1}, MORT:{w:1,l:2,s:2,m:1}, ASHEN_ISERIA:{w:1,l:2,s:2,m:1}
   },
   vanguard:{
-    ASHEN_ISERIA:{w:23,l:8,s:7,m:16}, HECKATE:{w:5,l:1,s:3,m:3}, GHOST_POLITIS:{w:5,l:3,s:3,m:3}, SECRET:{w:4,l:0,s:3,m:2},
-    RINAK:{w:4,l:13,s:5,m:3}, RAN:{w:3,l:0,s:2,m:2}, AMID:{w:2,l:0,s:1,m:2}, ELENA:{w:2,l:3,s:2,m:2}, GIO:{w:2,l:4,s:3,m:1},
-    MORT:{w:2,l:6,s:3,m:1}, ISEPUNISH_ARIA:{w:2,l:6,s:5,m:1}, DEVIL_RUA:{w:1,l:0,s:1,m:1}, ARUNKA:{w:1,l:0,s:1,m:1}, TENEBRIA:{w:1,l:0,s:1,m:1},
-    WOLF_PEIRA:{w:1,l:0,s:1,m:1}, SEOLHWA:{w:1,l:1,s:1,m:1}, HARSETI:{w:1,l:1,s:2,m:1}, BABY_SHENNA:{w:1,l:1,s:2,m:1}, MYTH_ACHATES:{w:1,l:1,s:1,m:1},
-    SELINE:{w:1,l:1,s:2,m:1}, VERONICA:{w:1,l:2,s:3,m:1}, FRIEREN:{w:1,l:3,s:4,m:1}, SKY_ILLYNAV:{w:1,l:3,s:3,m:1}, BELIAN:{w:1,l:5,s:2,m:1}
+    ASHEN_ISERIA:{w:24,l:8,s:5,m:16}, MAID_CHLOE:{w:7,l:1,s:1,m:7}, HECKATE:{w:6,l:1,s:4,m:3}, SECRET:{w:6,l:2,s:4,m:2},
+    GHOST_POLITIS:{w:6,l:7,s:5,m:3}, RINAK:{w:5,l:13,s:5,m:3}, ISEPUNISH_ARIA:{w:4,l:8,s:5,m:2}, HARSETI:{w:3,l:1,s:2,m:2},
+    RAN:{w:3,l:0,s:2,m:2}, MORT:{w:3,l:5,s:4,m:2}, FRIEREN:{w:3,l:5,s:4,m:2}, GIO:{w:3,l:6,s:4,m:2}, AMID:{w:2,l:0,s:1,m:2},
+    DEVIL_RUA:{w:2,l:0,s:1,m:2}, SEOLHWA:{w:2,l:1,s:2,m:1}, MYTH_ACHATES:{w:2,l:1,s:1,m:1}, ARUNKA:{w:2,l:2,s:2,m:1}, SELINE:{w:2,l:3,s:2,m:1},
+    ELENA:{w:2,l:4,s:2,m:1}, BELIAN:{w:2,l:7,s:2,m:1}
   }
 };
 const LOG_ROLE_CONFIDENCE_CONFIG = {
-  first:{sampleCap:12, minSamples:3, minWins:2, threshold:0.44},
-  early:{sampleCap:22, minSamples:5, minWins:3, threshold:0.41},
-  vanguard:{sampleCap:18, minSamples:4, minWins:2, threshold:0.39}
+  first:{sampleCap:16, minSamples:4, minWins:3, threshold:0.46},
+  early:{sampleCap:30, minSamples:6, minWins:4, threshold:0.42},
+  vanguard:{sampleCap:26, minSamples:4, minWins:2, threshold:0.40}
 };
 const OPEN_COUNTER_RISKS = [
   {target:'RAN', counters:['GIO'], weight:9.5, note:'지오 오픈 시 란 선턴 안정성 급감'},

@@ -967,6 +967,17 @@ function futureOpponentPickCount(nextStage){
   return count;
 }
 
+// 고체급 영웅은 오픈 카운터 패널티를 일부 완충
+function openCounterResilience(hero){
+  if(!hero) return 1;
+  const pick = Math.max(0, Number(hero.pick || 0));
+  const win = Math.max(0, Number(hero.win || 0));
+  const ban = Math.max(0, Number(hero.ban || 0));
+  const metaPower = pick * 0.16 + win * 0.18 + ban * 0.03;
+  const normalized = Math.min(1, metaPower / 18.5);
+  return 1 - Math.pow(normalized, 0.92) * 0.32;
+}
+
 function projectedOpenCounterPenalty(candidate, myPicks, oppPicks, stage){
   if(!candidate || !stage || stage.type!=='pick' || stage.side!=='me') return 0;
   const futureOpp = futureOpponentPickCount(stage);
@@ -990,7 +1001,8 @@ function projectedOpenCounterPenalty(candidate, myPicks, oppPicks, stage){
   if(!openThreats.length) return 0;
   const top = openThreats.slice(0, Math.min(2, futureOpp));
   const pressure = futureOpp >= 3 ? 1.0 : (futureOpp === 2 ? 0.78 : 0.55);
-  return Math.min(12.0, top.reduce((sum, x) => sum + x.threat, 0) * pressure);
+  const rawPenalty = Math.min(12.0, top.reduce((sum, x) => sum + x.threat, 0) * pressure);
+  return rawPenalty * openCounterResilience(candidate);
 }
 
 function completionPressureBonus(candidate, myPicks){
@@ -1606,6 +1618,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 

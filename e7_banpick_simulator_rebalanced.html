@@ -112,6 +112,13 @@
     #myPickSlots,#oppPickSlots{display:grid;grid-template-columns:1fr;gap:8px}
     #finalBanSlots{display:grid;grid-template-columns:1fr;gap:8px}
     .prebanInlineText{font-size:11px;color:#cbd5e1;line-height:1.5;text-align:center}
+    .synergyRows{display:grid;gap:8px}
+    .synergyRow{display:grid;grid-template-columns:190px 1fr;gap:10px;align-items:center}
+    .synergyTitle{font-size:12px;font-weight:800;color:#e5e7eb;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .synergyRail{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding-bottom:4px;scrollbar-width:thin}
+    .synergyChipCard{flex:0 0 auto;min-width:116px;max-width:140px;padding:7px 9px;border-radius:12px;border:1px solid #334155;background:#111827}
+    .synergyChipName{font-size:12px;font-weight:800;line-height:1.2;color:#e5e7eb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .synergyChipMeta{font-size:10px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
     @media (max-width: 1180px){
       .grid{grid-template-columns:1fr}
       .heroGrid{max-height:none}
@@ -209,14 +216,20 @@
       </div>
 
       <div class="panel">
-        <div class="panelHeader"><h3>내 다음 선택 추천</h3><span id="recModePill" class="pill"></span></div>
+        <div class="panelHeader"><h3>현재 픽 기준 [연계 추천]</h3><span class="pill">가로 압축 표시</span></div>
+        <div class="panelBody synergyRows" id="synergyPanels"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panelHeader"><h3>내 다음 선택 [종합 추천]</h3><span id="recModePill" class="pill"></span></div>
         <div class="panelBody">
           <div class="list" id="recommendations"></div>
         </div>
       </div>
 
+
       <div class="panel">
-        <div class="panelHeader"><h3>2픽 구간 페어 추천</h3><span class="pill">내 다음 단계가 2픽이면 활성화</span></div>
+        <div class="panelHeader"><h3>2픽 구간 [페어 추천]</h3><span class="pill">내 다음 단계가 2픽이면 활성화</span></div>
         <div class="panelBody pairList" id="pairRecommendations"></div>
       </div>
     </div>
@@ -232,9 +245,10 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panelHeader"><h3>현재 메타/모델 메모</h3><span class="pill">설명용</span></div>
-        <div class="panelBody foot">
+
+      <div class="panel" id="metaModelPanel">
+        <div class="panelHeader"><h3>현재 메타/모델 메모</h3><button id="metaModelToggleBtn" class="btn" style="padding:4px 8px;font-size:11px;">열기</button></div>
+        <div class="panelBody foot" id="metaModelPanelBody" style="display:none;">
         <div class="avgNote" id="debugPanel" style="margin-top:10px; white-space:pre-wrap; font-family:Consolas, monospace;"></div>
           <div>• 모델은 <b>최신 레전드 픽률/승률/밴률</b>, <b>최신 메타 상성/시너지</b>, <b>랭킹 1·2·3·4·5·6·10등 실전 로그 + 레전드 평균 유저 검증 로그 + 레전드 평균 유저 검증 로그</b>만을 합쳐 점수화합니다.</div>
           <div>• 상성/시너지 관계는 <b>에픽세븐 전적 사이트의 데이터</b>를 기준으로 사용합니다.</div>
@@ -289,7 +303,7 @@ const HEROES = [
   {id:'LIDICA', name:'리디카', pick:2.71, win:62.79, ban:18.03, hard:['ORIGIN_RAS','RINAK'], syn:['ARUNKA','RUEL']},
   {id:'YONG_SHARUN', name:'용왕 샤룬', pick:2.52, win:58.07, ban:31.42, hard:['DARK_DIEANE','RUEL'], syn:['RINAK','SECRET']},
   {id:'AMID', name:'아미드', pick:2.82, win:59.67, ban:14.67, hard:['RINAK','ARUNKA','MAID_CHLOE'], syn:['FRIEREN','TENEBRIA','ARUNKA','SELINE']},
-  {id:'ELENA_STAR', name:'별의 엘레나', pick:2.60, win:55.60, ban:5.50, hard:['ARUNKA','RINAK'], syn:['MOON_LUNA','SEOLHWA']},
+  {id:'ELENA_STAR', name:'별의 신탁 엘레나', pick:2.60, win:55.60, ban:5.50, hard:['ARUNKA','RINAK'], syn:['MOON_LUNA','SEOLHWA']},
 
   {id:'VERONICA', name:'베로니카', pick:0.00, win:0.00, ban:0.00, hard:[], syn:['AMID','FRIEREN','RUEL']},
   {id:'KISE', name:'키세', pick:0.00, win:0.00, ban:0.00, hard:[], syn:['AMID','FRIEREN','RUEL']},
@@ -315,7 +329,7 @@ const HEROES = [
   {id:'SUMMER_CHARLOTTE', name:'여름의 방학 샬롯', pick:2.20, win:54.80, ban:1.20, hard:['GREEN_CORE'], syn:['SUCCESSOR_TAEYU','GIO'], note:'로그 등장 영웅 · 참조용'},
   {id:'SAGE_BAAL', name:'현자 바알&세잔', pick:2.00, win:54.60, ban:1.10, hard:['TURN_ONE_CORE'], syn:['ELENA'], note:'로그 등장 영웅 · 참조용'},
   {id:'SARMIA', name:'사르미아', pick:1.80, win:54.00, ban:0.80, hard:['BRUISER_CORE'], syn:['DARK_DIEANE','RUEL'], note:'로그 등장 영웅 · 참조용'},
-  {id:'SCENT_POLITIS', name:'바다의 향기 폴리티스', pick:13.09, win:60.83, ban:9.01, hard:['ARUNKA','ORIGIN_RAS','RINAK'], syn:['ORIGIN_RAS','FRIEREN','ARUNKA','DARK_DIEANE'], note:'폴리티스 계열 로그 표기'},
+  {id:'SCENT_POLITIS', name:'바다의 유령 폴리티스', pick:13.09, win:60.83, ban:9.01, hard:['ARUNKA','ORIGIN_RAS','RINAK'], syn:['ORIGIN_RAS','FRIEREN','ARUNKA','DARK_DIEANE'], note:'폴리티스 계열 로그 표기'},
   {id:'CELINE', name:'셀린', pick:1.26, win:55.47, ban:41.37, hard:['FRIEREN'], syn:['ARUNKA'], note:'로그 등장 영웅 · 참조용'},
   {id:'RAN', name:'란', pick:2.85, win:60.02, ban:3.59, hard:['LIBRA_MASTER','ORIGIN_RAS','RINAK'], syn:['DARK_DIEANE','RUEL','FRIEREN']},
   {id:'AKI', name:'아키', pick:1.01, win:60.00, ban:39.63, hard:['ARUNKA','YULHA'], syn:['ORIGIN_RAS','DARK_DIEANE']},
@@ -323,7 +337,7 @@ const HEROES = [
   {id:'BASE_POLITIS', name:'폴리티스', pick:1.06, win:61.82, ban:32.65, hard:['ARUNKA','ORIGIN_RAS'], syn:['YULHA','RUEL','FLOWER_LIDICA']},
   {id:'SENUA', name:'제뉴아', pick:1.13, win:61.91, ban:25.48, hard:['FRIEREN'], syn:['ARUNKA','YULHA']},
   {id:'DRIFTER_LUDWIG', name:'영겁의 표류자 루트비히', pick:1.07, win:56.82, ban:28.71, hard:['ARUNKA'], syn:['RUEL','YULHA']},
-  {id:'HWARAN_RAVI', name:'화란의 라비', pick:1.07, win:54.61, ban:21.77, hard:['ORIGIN_RAS','SECRET'], syn:['MOON_RABBIT_DOMINIEL','ARIA']},
+  {id:'HWARAN_RAVI', name:'화란의 라비', pick:1.07, win:54.61, ban:21.77, hard:['ORIGIN_RAS','SECRET'], syn:['MOON_RABBIT_DOMINIEL','PUNISH_PUNISH_ARIA']},
   {id:'TWISTED_KAYRON', name:'뒤틀린 망령 카일론', pick:0.87, win:60.44, ban:32.39, hard:['FRIEREN'], syn:['ARUNKA','SECRET']},
   {id:'WESTWIND_SHURI', name:'서풍의 처형자 슈리', pick:0.84, win:56.95, ban:31.70, hard:['YULHA'], syn:['ARAM','VILDRED']},
   {id:'SHURI', name:'슈리', pick:0.83, win:62.48, ban:42.68, hard:['BELIAN'], syn:['VILDRED','SECRET']},
@@ -332,15 +346,22 @@ const HEROES = [
   {id:'MILIM', name:'밀림', pick:0.95, win:57.00, ban:22.00, hard:['FRIEREN'], syn:['ARUNKA','SECRET'], note:'로그 등장 영웅 · 참조용'},
   {id:'NAKWOL', name:'낙월', pick:0.95, win:57.00, ban:22.00, hard:['YULHA'], syn:['ARUNKA','RINAK'], note:'로그 등장 영웅 · 참조용'},
   {id:'BENIMARU', name:'베니마루', pick:0.95, win:57.00, ban:22.00, hard:['SECRET'], syn:['ARUNKA','ISEPUNISH_ARIA'], note:'로그 등장 영웅 · 참조용'},
-  {id:'STAR_ELENA', name:'별의 신탁 엘레나', pick:0.95, win:57.00, ban:22.00, hard:['AOE_CORE'], syn:['ARIA','YULHA'], note:'로그 등장 영웅 · 참조용'},
+  {id:'STAR_ELENA', name:'별의 신탁 엘레나', pick:0.95, win:57.00, ban:22.00, hard:['AOE_CORE'], syn:['PUNISH_PUNISH_ARIA','YULHA'], note:'로그 등장 영웅 · 참조용'},
   {id:'HUMIR', name:'후미르', pick:0.95, win:57.00, ban:22.00, hard:['ARUNKA'], syn:['MOON_LUNA','RUEL'], note:'로그 등장 영웅 · 참조용'},
   {id:'PERN', name:'페른', pick:0.95, win:57.00, ban:22.00, hard:['ARUNKA'], syn:['FRIEREN','YULHA'], note:'로그 등장 영웅 · 참조용'},
   {id:'KRAU', name:'크라우', pick:0.95, win:57.00, ban:22.00, hard:['ARUNKA'], syn:['RUEL','DARK_DIEANE'], note:'로그 등장 영웅 · 참조용'},
   {id:'WANDERER_SILK', name:'방랑자 실크', pick:0.95, win:57.00, ban:22.00, hard:['FRIEREN'], syn:['VILDRED','LIDICA'], note:'로그 등장 영웅 · 참조용'},
-];
+  {id:'NAVY_LANDY', name:'해군대령 랑디', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
+  {id:'DESERT_JEWEL_BASAR', name:'사막의 보석 바사르', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
+  {id:'AUXILIARY_LOTS', name:'보조형 랏츠', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
+  {id:'PIRATE_CAPTAIN_FLAN', name:'해적 선장 플랑', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
+  {id:'JACK_O', name:'잭 오', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
+  {id:'ELVIRA', name:'엘비라', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
+  {id:'TORAMI', name:'토라미', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
+  {id:'VACATION_YUFINE', name:'바캉스 유피네', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},];
 
 const HERO_BY_ID = Object.fromEntries(HEROES.map(h => [h.id, h]));
-const HERO_ID_ALIASES = {SCENT_POLITIS:'GHOST_POLITIS'};
+const HERO_ID_ALIASES = {SCENT_POLITIS:'GHOST_POLITIS', ELENA_STAR:'STAR_ELENA', PUNISH_ARIA:'PUNISH_PUNISH_ARIA', ARIA:'PUNISH_PUNISH_ARIA'};
 const ALIAS_HERO_IDS = new Set(Object.keys(HERO_ID_ALIASES));
 function normalizeHeroId(heroId){ return HERO_ID_ALIASES[heroId] || heroId; }
 function normalizeHeroIds(ids){ return [...new Set((ids||[]).map(normalizeHeroId))]; }
@@ -385,7 +406,7 @@ const RAW_PACKAGES = [
   {name:'베로니카-아미드-프리렌-루엘', members:['VERONICA','AMID','FRIEREN','RUEL'], weight:11},
   {name:'키세-아미드-프리렌-루엘', members:['KISE','AMID','FRIEREN','RUEL'], weight:10},
   {name:'아미드-프리렌-모르트-천칭', members:['AMID','FRIEREN','MORT','LIBRA_MASTER'], weight:10},
-  {name:'아리아-플랑-잿숲-보세리아', members:['PUNISH_ARIA','FLAN','ASHEN_ISERIA','ISEPUNISH_ARIA'], weight:10},
+  {name:'아리아-플랑-잿숲-보세리아', members:['PUNISH_PUNISH_ARIA','FLAN','ASHEN_ISERIA','ISEPUNISH_ARIA'], weight:10},
   {name:'설화-잿숲-보세리아-천칭', members:['SEOLHWA','ASHEN_ISERIA','ISEPUNISH_ARIA','LIBRA_MASTER'], weight:10},
   {name:'루엘-폴리티스-벨리안-기라스', members:['RUEL','GHOST_POLITIS','BELIAN','ORIGIN_RAS'], weight:11},
   {name:'메클-폴리티스-기라스-디에네', members:['MAID_CHLOE','GHOST_POLITIS','ORIGIN_RAS','DARK_DIEANE'], weight:11},
@@ -472,10 +493,10 @@ const OPEN_COUNTER_RISKS = [
   {target:'COMMANDER_PAVEL', counters:['GIO'], weight:4.0, note:'지오 오픈 시 파벨 선턴 리스크'}
 ];
 const HIGHROLLER_TURN_ONE = {
-  core:['SIDER','VILDRED','ASHEN_ISERIA','FRIEREN','ISEPUNISH_ARIA','ARUNKA','FLAN','COMMANDER_PAVEL','HWAYOUNG'],
-  openers:['SIDER','FLAN','COMMANDER_PAVEL','WANDERER_SILK','WESTWIND_SHURI','SHURI'],
+  core:['SIDER','VILDRED','ASHEN_ISERIA','FRIEREN','ISEPUNISH_ARIA','ARUNKA','FLAN','GIO','COMMANDER_PAVEL','HWAYOUNG'],
+  openers:['SIDER','FLAN','GIO','COMMANDER_PAVEL','WANDERER_SILK','WESTWIND_SHURI','SHURI'],
   follow:['VILDRED','ASHEN_ISERIA','FRIEREN','ARUNKA','ISEPUNISH_ARIA','HWAYOUNG'],
-  support:['GHOST_POLITIS','SCENT_POLITIS','BASE_POLITIS','ORIGIN_RAS'],
+  support:['GHOST_POLITIS','BASE_POLITIS','ORIGIN_RAS'],
   blockers:['DARK_DIEANE','RUEL','YULHA','BELIAN','GIO','ELENA','NCECILIA','BABY_SHENNA','SNOW_SOLITARIA'],
   observedPairs:[
     ['SIDER','VILDRED'],
@@ -937,9 +958,20 @@ function hasObservedTempoPair(candidateId, myPicks){
   return HIGHROLLER_TURN_ONE.observedPairs.some(pair => pair.includes(candidateId) && pair.some(id => id !== candidateId && myPicks.includes(id)));
 }
 
+// 하르세티 오픈 시 선턴잡이 가치 보수 보정
+function harsetiOpenFirstTurnPenalty(candidate){
+  if(!candidate || !HIGHROLLER_TURN_ONE.core.includes(candidate.id)) return 0;
+  if(actualPrebans().includes('HARSETI')) return 0;
+  let penalty = 8.5;
+  if(HIGHROLLER_TURN_ONE.openers.includes(candidate.id)) penalty += 2.2;
+  if(HIGHROLLER_TURN_ONE.follow.includes(candidate.id)) penalty += 1.4;
+  return penalty;
+}
+
 function turnOneArchetypeBonus(candidate, myPicks, oppPicks, stage){
   if(!candidate || !stage || stage.type!=='pick' || stage.side!=='me') return 0;
   if(!HIGHROLLER_TURN_ONE.core.includes(candidate.id)) return 0;
+  if(!actualPrebans().includes('HARSETI')) return 0;
   const totalPicked = myPicks.length + oppPicks.length;
   let score = state.side==='first' ? 1.4 : 0.35;
   if(totalPicked <= 2 && HIGHROLLER_TURN_ONE.openers.includes(candidate.id)) score += 2.2;
@@ -968,7 +1000,8 @@ function turnOneReplicabilityPenalty(candidate, myPicks, oppPicks, stage){
   if(totalPicked >= 2 && alliedTempo===0 && !HIGHROLLER_TURN_ONE.openers.includes(candidate.id)) score += 1.2;
   if(blockers) score += Math.min(3.6, blockers * 1.2);
   if(candidate.ban >= 30 && alliedTempo < 2) score += 0.8;
-  return Math.min(5.4, score);
+  score += harsetiOpenFirstTurnPenalty(candidate);
+  return Math.min(14.5, score);
 }
 
 function heroReliabilityMultiplier(hero){
@@ -1005,7 +1038,7 @@ function scoreHero(candidateId, myPicks, oppPicks, stage){
 
   const synergyDiminish = 1 / (1 + Math.max(0, synergyLinks - 1) * 0.4);
   const packDiminish = 1 / (1 + Math.max(0, packageLinks - 1) * 0.35 + Math.max(0, openedPackageCount - 1) * 0.25);
-  const meta = metaRaw * 0.55 * reliability;
+  const meta = metaRaw * 0.605 * reliability;
   const synergy = synergyRaw * 0.20 * synergyDiminish;
   const pack = packRaw * 0.24 * packDiminish;
   const completion = Math.min(5.2, completionRaw * 0.58) * (1 / (1 + Math.max(0, packageLinks - 1) * 0.3));
@@ -1116,6 +1149,75 @@ function computeRecommendations(){
   }
 
   return {stage, pickLabel:nextMyPickLabel(), remainingSlots, singles, pairs};
+}
+
+function computeSynergyPanels(){
+  const stage = nextMyPickStage();
+  if(!stage) return [];
+  const picks = allPickArrays();
+  const myPicks = picks.me.map(normalizeHeroId).filter(Boolean);
+  if(!myPicks.length) return [];
+  const prebanIds = new Set(actualPrebans().map(normalizeHeroId));
+  const pickedIds = new Set([...picks.me, ...picks.opp].map(normalizeHeroId));
+  const pickedNames = new Set([...picks.me, ...picks.opp].map(id => canonicalHeroNameById(id)).filter(Boolean));
+  const vanguardId = normalizeHeroId(getVanguard('me'));
+  const recentId = myPicks[myPicks.length - 1];
+  const orderedBaseIds = [];
+  if(vanguardId && myPicks.includes(vanguardId)) orderedBaseIds.push(vanguardId);
+  if(recentId && !orderedBaseIds.includes(recentId)) orderedBaseIds.push(recentId);
+  for(let i=myPicks.length-1;i>=0;i--){
+    const id = myPicks[i];
+    if(!orderedBaseIds.includes(id)) orderedBaseIds.push(id);
+  }
+  const shouldHideHero = hero => {
+    if(!hero) return true;
+    const heroId = normalizeHeroId(hero.id);
+    const heroName = (hero.name || '').trim();
+    return prebanIds.has(heroId)
+      || pickedIds.has(heroId)
+      || ALIAS_HERO_IDS.has(hero.id)
+      || isLockedHero(heroId)
+      || isLockedHeroName(heroName)
+      || pickedNames.has(heroName);
+  };
+  const candidates = HEROES.filter(hero => !shouldHideHero(hero));
+  return orderedBaseIds.map(baseId => {
+    const baseHero = HERO_BY_ID[baseId];
+    if(!baseHero) return null;
+    const items = candidates.map(hero => {
+      let score = 0;
+      const reasons = [];
+      if((baseHero.syn || []).includes(hero.id)){
+        score += 9;
+        reasons.push('기준 영웅이 직접 연계');
+      }
+      if((hero.syn || []).includes(baseHero.id)){
+        score += 7.5;
+        reasons.push('후보가 기준 영웅과 직접 연계');
+      }
+      for(const p of PACKAGES){
+        if(p.members.includes(baseHero.id) && p.members.includes(hero.id)){
+          score += Math.min(5.2, p.weight * 0.22);
+          reasons.push('같은 조합 축 연결');
+          break;
+        }
+      }
+      if(HIGHROLLER_TURN_ONE.observedPairs.some(pair => pair.includes(baseHero.id) && pair.includes(hero.id))){
+        score += 3.4;
+        reasons.push('로그 페어 연계');
+      }
+      const meta = hero.win * 0.03 + hero.pick * 0.02 + hero.ban * 0.01;
+      score += meta;
+      return {hero, score, reasons:[...new Set(reasons)].slice(0,3)};
+    }).filter(item => item.score > 0)
+      .sort((a,b)=>b.score-a.score)
+      .slice(0,5);
+    return {
+      baseHero: baseHero,
+      priority: vanguardId===baseId ? 'vanguard' : (recentId===baseId ? 'recent' : 'team'),
+      items
+    };
+  }).filter(panel => panel && panel.items.length);
 }
 // 최종 밴 위협도 방향 수정
 function computeFinalBanSuggestion(){
@@ -1287,6 +1389,39 @@ function renderDebug(){
     'topSingles=' + rec.singles.slice(0, 3).map(x => x.hero.name + ':' + x.total.toFixed(1)).join(' | ')
   ].join('\n');
 }
+
+function renderSynergyPanels(){
+  const box = document.getElementById('synergyPanels');
+  if(!box) return;
+  const panels = computeSynergyPanels();
+  if(!panels.length){
+    box.innerHTML = '<div class="tiny">현재 연계 추천을 표시할 내 픽이 없습니다.</div>';
+    return;
+  }
+  const summarizeReason = item => {
+    const reason = (item.reasons||[])[0] || '';
+    if(reason.includes('직접 연계')) return '직접 연계';
+    if(reason.includes('같은 조합 축')) return '같은 축';
+    if(reason.includes('로그 페어')) return '로그 페어';
+    return '연계 후보';
+  };
+  const titleByPriority = panel => {
+    if(panel.priority==='vanguard') return panel.baseHero.name + ' 연계';
+    if(panel.priority==='recent') return panel.baseHero.name + ' 최근 픽 연계';
+    return panel.baseHero.name + ' 연계';
+  };
+  box.innerHTML = panels.map(panel => `
+    <div class="synergyRow">
+      <div class="synergyTitle">${titleByPriority(panel)}</div>
+      <div class="synergyRail">${panel.items.map(item => `
+        <div class="synergyChipCard">
+          <div class="synergyChipName">${item.hero.name}</div>
+          <div class="synergyChipMeta">${summarizeReason(item)}</div>
+        </div>
+      `).join('')}</div>
+    </div>
+  `).join('');
+}
 function toggleRecDetails(id, btn){
   const el = document.getElementById(id);
   if(!el) return;
@@ -1358,6 +1493,7 @@ function render(){
   renderSteps();
   renderHeroGrid();
   renderRecs();
+  renderSynergyPanels();
   renderDebug();
 }
 // wire up
@@ -1372,6 +1508,15 @@ if(updateNotesBtn && updateNotesPanel){
     updateNotesPanel.style.display = updateNotesPanel.style.display === 'none' ? 'block' : 'none';
   };
 }
+const metaModelToggleBtn = document.getElementById('metaModelToggleBtn');
+const metaModelPanelBody = document.getElementById('metaModelPanelBody');
+if(metaModelToggleBtn && metaModelPanelBody){
+  metaModelToggleBtn.onclick = () => {
+    const open = metaModelPanelBody.style.display === 'none';
+    metaModelPanelBody.style.display = open ? 'block' : 'none';
+    metaModelToggleBtn.textContent = open ? '닫기' : '열기';
+  };
+}
 document.getElementById('nextRoundBtn').onclick = nextRound;
 document.getElementById('oppPrebanSkipBtn').onclick = toggleOppPrebanSkip;
 document.getElementById('resetBtn').onclick = resetAll;
@@ -1381,6 +1526,13 @@ render();
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
 
 
 

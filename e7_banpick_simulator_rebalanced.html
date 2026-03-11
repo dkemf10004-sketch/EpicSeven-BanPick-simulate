@@ -322,9 +322,9 @@ const HEROES = [
   {id:'DEVIL_RUA', name:'소악마 루아', pick:2.24, win:63.91, ban:20.83, hard:[], syn:['RUEL','DARK_DIEANE']},
   {id:'BABY_SHENNA', name:'어린 셰나', pick:1.44, win:57.75, ban:40.92, hard:['GHOST_POLITIS'], syn:['FRIEREN','MORT','RINAK']},
   {id:'AMING', name:'홍염의 아밍', pick:2.39, win:60.76, ban:5.24, hard:[], syn:['RUEL','YULHA']},
-  {id:'AMIKI', name:'전승의 아미키', pick:0.00, win:0.00, ban:0.00, hard:[], syn:['ORIGIN_RAS','YULHA']},
-  {id:'SIDER', name:'시더', pick:2.00, win:54.00, ban:1.00, hard:[], syn:['FRIEREN','ISEPUNISH_ARIA'], note:'로그 등장 영웅 · 참조용'},
-  {id:'VILDRED', name:'빌트레드', pick:2.35, win:61.47, ban:37.15, hard:[], syn:['ARUNKA'], note:'로그 등장 영웅 · 참조용'},
+  {id:'AMIKI', name:'전승의 아미키', pick:0.64, win:59.24, ban:45.67, hard:[], syn:['ORIGIN_RAS','YULHA']},
+  {id:'SIDER', name:'시더', pick:2.00, win:54.00, ban:1.00, hard:[], syn:['FRIEREN','ISEPUNISH_ARIA'], tags:['speed_contest'], note:'로그 등장 영웅 · 참조용'},
+  {id:'VILDRED', name:'빌트레드', pick:2.35, win:61.47, ban:37.15, hard:[], syn:['ARUNKA'], tags:['speed_contest'], note:'로그 등장 영웅 · 참조용'},
   {id:'FLOWER_LIDICA', name:'화원의 리디카', pick:0.70, win:52.79, ban:35.56, hard:['SECRET'], syn:['YULHA','HARSETI'], note:'로그 등장 영웅 · 참조용'},
   {id:'SILVER_CHRISTY', name:'은결의 크리스티', pick:2.07, win:55.48, ban:31.10, hard:[], syn:['ARAM','SELINE'], note:'로그 등장 영웅 · 참조용'},
   {id:'MOON_RABBIT_DOMINIEL', name:'달토끼 도미니엘', pick:1.58, win:60.28, ban:29.20, hard:[], syn:['YULHA','BELIAN'], note:'로그 등장 영웅 · 참조용'},
@@ -333,9 +333,9 @@ const HEROES = [
   {id:'REQUIEM_ROANA', name:'진혼의 로앤나', pick:0.84, win:54.07, ban:40.35, hard:[], syn:['YULHA','GIO'], note:'로그 등장 영웅 · 참조용'},
   {id:'ELENA', name:'엘레나', pick:2.04, win:57.49, ban:24.22, hard:['AOE_CORE'], syn:['DARK_DIEANE','RUEL'], note:'로그 등장 영웅 · 참조용'},
   {id:'SNOW_SOLITARIA', name:'설국의 솔리타리아', pick:1.78, win:61.56, ban:53.34, hard:['TURN_ONE_CORE'], syn:['SEOLHWA','ASHEN_ISERIA'], note:'로그 등장 영웅 · 참조용'},
-  {id:'BLOOD_KARIN', name:'혈검 카린', pick:1.90, win:54.20, ban:0.90, hard:['FRONTLINE_CORE'], syn:['AMID'], note:'로그 등장 영웅 · 참조용'},
+  {id:'BLOOD_KARIN', name:'혈검 카린', pick:0.58, win:59.53, ban:28.54, hard:['FRONTLINE_CORE'], syn:['AMID'], note:'로그 등장 영웅 · 참조용'},
   {id:'SUMMER_CHARLOTTE', name:'여름의 방학 샬롯', pick:2.20, win:54.80, ban:1.20, hard:['GREEN_CORE'], syn:['SUCCESSOR_TAEYU','GIO'], note:'로그 등장 영웅 · 참조용'},
-  {id:'SAGE_BAAL', name:'현자 바알&세잔', pick:2.00, win:54.60, ban:1.10, hard:['TURN_ONE_CORE'], syn:['ELENA'], note:'로그 등장 영웅 · 참조용'},
+  {id:'SAGE_BAAL', name:'현자 바알&세잔', pick:0.62, win:60.43, ban:38.34, hard:['TURN_ONE_CORE'], syn:['ELENA'], note:'로그 등장 영웅 · 참조용'},
   {id:'SARMIA', name:'사르미아', pick:1.10, win:59.12, ban:48.42, hard:['BRUISER_CORE'], syn:['DARK_DIEANE','RUEL'], note:'로그 등장 영웅 · 참조용'},
   {id:'SCENT_POLITIS', name:'바다의 유령 폴리티스', pick:11.54, win:61.95, ban:9.59, hard:['ARUNKA','ORIGIN_RAS','RINAK'], syn:['ORIGIN_RAS','FRIEREN','ARUNKA'], note:'폴리티스 계열 로그 표기'},
   {id:'CELINE', name:'셀린', pick:1.26, win:55.47, ban:41.37, hard:['FRIEREN'], syn:['ARUNKA'], note:'로그 등장 영웅 · 참조용'},
@@ -348,7 +348,7 @@ const HEROES = [
   {id:'HWARAN_RAVI', name:'화란의 라비', pick:1.07, win:54.61, ban:21.77, hard:['ORIGIN_RAS','SECRET'], syn:['MOON_RABBIT_DOMINIEL','PUNISH_PUNISH_ARIA']},
   {id:'TWISTED_KAYRON', name:'뒤틀린 망령 카일론', pick:0.87, win:60.44, ban:32.39, hard:['FRIEREN'], syn:['ARUNKA','SECRET'], note:'로그 등장 영웅 · 참조용'},
   {id:'WESTWIND_SHURI', name:'서풍의 처형자 슈리', pick:0.84, win:56.95, ban:31.70, hard:['YULHA'], syn:['ARAM','VILDRED']},
-  {id:'SHURI', name:'슈리', pick:0.83, win:62.48, ban:42.68, hard:['BELIAN'], syn:['VILDRED','SECRET'], note:'기존 HTML/로그 메모'},
+  {id:'SHURI', name:'슈리', pick:0.83, win:62.48, ban:42.68, hard:['BELIAN'], syn:['VILDRED','SECRET'], tags:['speed_contest'], note:'기존 HTML/로그 메모'},
   {id:'MEDIATOR_KAWERIK', name:'조율자 카웨릭', pick:0.73, win:54.01, ban:24.18, hard:['CONTROL_CORE'], syn:['LRK','SECRET'], note:'기존 HTML/로그 메모'},
   {id:'DARKWALL_CHARLOTTE', name:'어린 여왕 샬롯', pick:0.71, win:60.72, ban:20.65, hard:['ARUNKA'], syn:['RUEL','YULHA'], note:'기존 HTML/로그 메모'},
   {id:'MILIM', name:'밀림', pick:0.95, win:57.00, ban:22.00, hard:['FRIEREN'], syn:['ARUNKA','SECRET'], note:'로그 등장 영웅 · 참조용'},
@@ -358,7 +358,8 @@ const HEROES = [
   {id:'HUMIR', name:'후미르', pick:0.95, win:57.00, ban:22.00, hard:['ARUNKA'], syn:['MOON_LUNA','RUEL'], note:'로그 등장 영웅 · 참조용'},
   {id:'PERN', name:'페른', pick:0.95, win:57.00, ban:22.00, hard:['ARUNKA'], syn:['FRIEREN','YULHA'], note:'로그 등장 영웅 · 참조용'},
   {id:'KRAU', name:'크라우', pick:0.95, win:57.00, ban:22.00, hard:['ARUNKA'], syn:['RUEL','DARK_DIEANE'], note:'로그 등장 영웅 · 참조용'},
-  {id:'WANDERER_SILK', name:'방랑자 실크', pick:0.95, win:57.00, ban:22.00, hard:['FRIEREN'], syn:['VILDRED','LIDICA'], note:'로그 등장 영웅 · 참조용'},
+  {id:'WANDERER_SILK', name:'방랑자 실크', pick:0.63, win:59.26, ban:46.32, hard:['FRIEREN'], syn:['VILDRED','LIDICA'], tags:['speed_contest'], note:'로그 등장 영웅 · 참조용'},
+  {id:'SURIN', name:'수린', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], tags:['speed_contest'], note:'속기각 태그 반영 · 추후 데이터 보강 필요'},
   {id:'NAVY_LANDY', name:'해군대령 랑디', pick:2.95, win:58.46, ban:27.58, hard:['ORIGIN_RAS','SECRET','TENEBRIA'], syn:['ARUNKA','SKY_ILLYNAV','YULHA'], note:'이름만 반영 · 수치 미입력'},
   {id:'DESERT_JEWEL_BASAR', name:'사막의 보석 바사르', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
   {id:'AUXILIARY_LOTS', name:'보조형 랏츠', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
@@ -993,7 +994,7 @@ function projectedOpenCounterPenalty(candidate, myPicks, oppPicks, stage){
       if(risk.target === candidate.id && (risk.counters||[]).includes(h.id)) threat += risk.weight;
     }
     const oppLinks = oppPicks.filter(id => (h.syn||[]).includes(id) || (HERO_BY_ID[id]?.syn||[]).includes(h.id)).length;
-    threat += oppLinks * 1.35;
+    threat += oppLinks * 1.05;
     threat += h.pick * 0.035;
     if(HIGHROLLER_TURN_ONE.blockers.includes(h.id) && HIGHROLLER_TURN_ONE.core.includes(candidate.id)) threat += 2.0;
     return {id:h.id, threat};
@@ -1002,7 +1003,8 @@ function projectedOpenCounterPenalty(candidate, myPicks, oppPicks, stage){
   const top = openThreats.slice(0, Math.min(2, futureOpp));
   const pressure = futureOpp >= 3 ? 1.0 : (futureOpp === 2 ? 0.78 : 0.55);
   const rawPenalty = Math.min(12.0, top.reduce((sum, x) => sum + x.threat, 0) * pressure);
-  return rawPenalty * openCounterResilience(candidate);
+  const resilience = openCounterResilience(candidate);
+  return rawPenalty * (0.92 * resilience + 0.08);
 }
 
 function completionPressureBonus(candidate, myPicks){
@@ -1016,6 +1018,22 @@ function completionPressureBonus(candidate, myPicks){
     if(linked >= 2) score += p.weight * 0.20;
   }
   return Math.min(6.0, score);
+}
+
+function isSpeedContestOpener(id){
+  return FIRST_TURN_OPENERS.includes(id) || HIGHROLLER_TURN_ONE.openers.includes(id);
+}
+function isSpeedContestScenario(myPicks, oppPicks){
+  return myPicks.some(isSpeedContestOpener) && oppPicks.some(isSpeedContestOpener);
+}
+function speedContestSkirmisherBonus(candidate, myPicks, oppPicks){
+  if(!candidate || !(candidate.tags||[]).includes('speed_contest')) return 0;
+  if(!isSpeedContestScenario(myPicks, oppPicks)) return 0;
+  const openerCount = myPicks.filter(isSpeedContestOpener).length + oppPicks.filter(isSpeedContestOpener).length;
+  const intensity = Math.min(1, Math.max(0, (openerCount - 2) / 3));
+  const metaRestraint = 1 - Math.min(0.18, (candidate.pick * 0.012 + candidate.win * 0.0012 + candidate.ban * 0.0016));
+  const rawBonus = 2.25 + 1.55 * intensity;
+  return Math.max(0, Math.min(4.1, rawBonus * metaRestraint));
 }
 
 function hasObservedTempoPair(candidateId, myPicks){
@@ -1083,9 +1101,14 @@ function heroReliabilityMultiplier(hero){
 // 픽률이 낮은 영웅은 범용 밸류 캐릭터로 과대평가되지 않도록 meta를 감쇠
 function pickValueGate(pick){
   const normalizedPick = Math.max(0, Number(pick || 0));
-  if(normalizedPick >= 22) return 1;
-  const ramp = Math.min(1, Math.max(0, (normalizedPick - 2) / 20));
-  return 0.58 + 0.42 * Math.pow(ramp, 0.82);
+  if(normalizedPick >= 24) return 1;
+  const ramp = Math.min(1, Math.max(0, (normalizedPick - 3) / 21));
+  return 0.52 + 0.48 * Math.pow(ramp, 1.18);
+}
+function metaTierAmplifier(metaRaw){
+  if(metaRaw <= 6.2) return 1;
+  const normalized = Math.min(1, Math.max(0, (metaRaw - 6.2) / 7.3));
+  return 1 + 0.16 * Math.pow(normalized, 1.08);
 }
 
 function scoreHero(candidateId, myPicks, oppPicks, stage){
@@ -1105,16 +1128,17 @@ function scoreHero(candidateId, myPicks, oppPicks, stage){
 
   const metaRaw = c.win*0.18 + c.pick*0.16 + c.ban*0.03;
   const metaGate = pickValueGate(c.pick);
+  const metaTier = metaTierAmplifier(metaRaw);
   const synergyRaw = synergyBonus(c, myPicks);
   const packRaw = packageBonus(c.id, myPicks, oppPicks);
   const completionRaw = completionPressureBonus(c, myPicks);
 
   const synergyDiminish = 1 / (1 + Math.max(0, synergyLinks - 1) * 0.4);
   const packDiminish = 1 / (1 + Math.max(0, packageLinks - 1) * 0.35 + Math.max(0, openedPackageCount - 1) * 0.25);
-  const meta = metaRaw * 0.605 * reliability * metaGate;
-  const synergy = synergyRaw * 0.20 * synergyDiminish;
-  const pack = packRaw * 0.24 * packDiminish;
-  const completion = Math.min(5.2, completionRaw * 0.58) * (1 / (1 + Math.max(0, packageLinks - 1) * 0.3));
+  const meta = metaRaw * 0.605 * reliability * metaGate * metaTier;
+  const synergy = synergyRaw * 0.18 * synergyDiminish;
+  const pack = packRaw * 0.21 * packDiminish;
+  const completion = Math.min(5.2, completionRaw * 0.52) * (1 / (1 + Math.max(0, packageLinks - 1) * 0.3));
 
   const counters = counterBonus(c, oppPicks) * 0.85;
   const early = earlyPickValue(c, myPicks, oppPicks) * 0.78 * reliability;
@@ -1125,19 +1149,20 @@ function scoreHero(candidateId, myPicks, oppPicks, stage){
   const archetype = turnOneArchetypeBonus(c, myPicks, oppPicks, stage) * reliability;
   const reproducibility = -turnOneReplicabilityPenalty(c, myPicks, oppPicks, stage);
   const openCounter = -projectedOpenCounterPenalty(c, myPicks, oppPicks, stage);
+  const speedContest = speedContestSkirmisherBonus(c, myPicks, oppPicks) * reliability;
   const firstTurnPenalty = vanguardFirstTurnPenalty(c, myPicks, oppPicks);
   const logTurnBonus = turnScopedLogWinBonus(c, myPicks, stage) * reliability;
 
-  const total = meta + synergy + pack + completion + counters + early + urgency + exposure + relief + vanguard + archetype + reproducibility + openCounter + firstTurnPenalty + logTurnBonus - repeatAxisPenalty;
+  const total = meta + synergy + pack + completion + counters + early + urgency + exposure + relief + vanguard + archetype + reproducibility + openCounter + speedContest + firstTurnPenalty + logTurnBonus - repeatAxisPenalty;
   return {
     hero:c,
     total,
-    breakdown:{meta, synergy, counters, pack, completion, early, urgency, exposure, relief, vanguard, archetype, reproducibility, openCounter, firstTurnPenalty, logTurnBonus, repeatAxisPenalty, reliability},
-    reasons:buildReasons(c, myPicks, oppPicks, early, vanguard, archetype, reproducibility, openCounter, reliability)
+    breakdown:{meta, synergy, counters, pack, completion, early, urgency, exposure, relief, vanguard, archetype, reproducibility, openCounter, speedContest, firstTurnPenalty, logTurnBonus, repeatAxisPenalty, reliability},
+    reasons:buildReasons(c, myPicks, oppPicks, early, vanguard, archetype, reproducibility, openCounter, reliability, speedContest)
   };
 }
 
-function buildReasons(c, myPicks, oppPicks, earlyValue=0, vanguardValue=0, archetypeValue=0, reproducibilityValue=0, openCounterValue=0, reliability=1){
+function buildReasons(c, myPicks, oppPicks, earlyValue=0, vanguardValue=0, archetypeValue=0, reproducibilityValue=0, openCounterValue=0, reliability=1, speedContestValue=0){
   const out = [];
   if(c.note) out.push(c.note);
   const synHits = (c.syn||[]).filter(id=>myPicks.includes(id)).slice(0,2).map(id=>HERO_BY_ID[id]?.name).filter(Boolean);
@@ -1164,6 +1189,7 @@ function buildReasons(c, myPicks, oppPicks, earlyValue=0, vanguardValue=0, arche
   if(archetypeValue >= 2.5) out.push('선턴 템포 로그 archetype과 결이 맞음');
   if(reproducibilityValue <= -2.4) out.push('초고스펙 전용 로그라 재현성은 보수적으로 봄');
   if(openCounterValue <= -4.0) out.push('오픈 카운터 리스크 큼');
+  if(speedContestValue >= 2.0) out.push('속도 경쟁 대응 카드');
   if(reliability < 0.9) out.push('실측 데이터 신뢰도가 낮아 보수 보정');
   return [...new Set(out)].slice(0,4);
 }
@@ -1618,6 +1644,12 @@ render();
 </script>
 </body>
 </html>
+
+
+
+
+
+
 
 
 

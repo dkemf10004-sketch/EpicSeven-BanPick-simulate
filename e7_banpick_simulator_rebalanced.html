@@ -263,52 +263,51 @@
 
 <script>
 const HEROES = [
-  {id:'ORIGIN_RAS', name:'기원의 라스', pick:32.46, win:61.41, ban:9.86, hard:['ARUNKA','RINAK','YULHA'], syn:['ARUNKA','YULHA','SKY_ILLYNAV','SEOLHWA']},
-  {id:'YULHA', name:'보건교사 율하', pick:30.11, win:62.17, ban:16.26, hard:['ARUNKA','ORIGIN_RAS','FRIEREN'], syn:['BELIAN','ORIGIN_RAS','SKY_ILLYNAV','SECRET','ISEPUNISH_ARIA']},
-  {id:'ARUNKA', name:'조장 아룬카', pick:29.66, win:58.26, ban:13.91, hard:['FRIEREN','MAID_CHLOE','LIBRA_MASTER'], syn:['RINAK','BELIAN','SELINE','ORIGIN_RAS','NAVY_LANDY']},
-  {id:'RUEL', name:'빛의 루엘', pick:24.84, win:61.90, ban:18.20, hard:['ORIGIN_RAS','ARUNKA','YULHA'], syn:['YULHA','ARUNKA','ORIGIN_RAS','DARK_DIEANE','ISEPUNISH_ARIA','RAN']},
-  {id:'FRIEREN', name:'프리렌', pick:22.02, win:62.61, ban:16.87, hard:['RINAK','MAID_CHLOE','ARUNKA'], syn:['AMID','MAID_CHLOE','BELIAN','ASHEN_ISERIA','RAN','MOON_LUNA']},
-  {id:'DARK_DIEANE', name:'어둠의 목자 디에네', pick:0.68, win:52.26, ban:26.01, hard:['ORIGIN_RAS','ARUNKA','RINAK'], syn:['ORIGIN_RAS','RUEL','GHOST_POLITIS','RAN','MORT']},
-  {id:'RINAK', name:'리나크', pick:21.24, win:58.70, ban:15.60, hard:['ORIGIN_RAS','ARUNKA','YULHA'], syn:['ORIGIN_RAS','ARUNKA','YULHA','ASHEN_ISERIA','FRIEREN']},
-  {id:'BELIAN', name:'벨리안', pick:18.80, win:60.11, ban:11.34, hard:['ORIGIN_RAS','ARUNKA','RINAK'], syn:['YULHA','ARUNKA','ORIGIN_RAS','FRIEREN','MOON_LUNA']},
-  {id:'SKY_ILLYNAV', name:'창공의 일리나브', pick:18.74, win:59.31, ban:11.43, hard:['FRIEREN','ORIGIN_RAS','NCECILIA'], syn:['ORIGIN_RAS','MAID_CHLOE','SEOLHWA','YULHA','ARUNKA','NAVY_LANDY']},
-  {id:'SECRET', name:'쾌속의 기수 세크레트', pick:17.39, win:60.99, ban:14.94, hard:['ARUNKA','ORIGIN_RAS','YULHA'], syn:['ORIGIN_RAS','YULHA','GIO','ISEPUNISH_ARIA']},
-  {id:'ISEPUNISH_ARIA', name:'보검의 군주 이세리아', pick:15.12, win:58.25, ban:18.13, hard:['MORT','YULHA','ARUNKA'], syn:['RUEL','ORIGIN_RAS','YULHA','SECRET']},
-  {id:'LIBRA_MASTER', name:'천칭의 주인', pick:14.44, win:67.55, ban:21.27, hard:['ARUNKA','DARK_DIEANE','YULHA'], syn:['FRIEREN','ASHEN_ISERIA','ORIGIN_RAS']},
-  {id:'GHOST_POLITIS', name:'바다의 유령 폴리티스', pick:13.09, win:60.83, ban:9.01, hard:['ARUNKA','ORIGIN_RAS','RINAK'], syn:['ORIGIN_RAS','FRIEREN','ARUNKA','DARK_DIEANE']},
-  {id:'GIO', name:'지오', pick:11.64, win:53.52, ban:13.99, hard:['RINAK','FRIEREN','AMID','ARUNKA'], syn:['FLAN','FRIEREN','SUCCESSOR_TAEYU','SECRET']},
-  {id:'MAID_CHLOE', name:'메이드 클로에', pick:10.66, win:63.79, ban:16.68, hard:['FRIEREN','ARUNKA','RINAK'], syn:['FRIEREN','RINAK','SKY_ILLYNAV']},
-  {id:'SELINE', name:'영안의 셀린', pick:9.58, win:59.10, ban:16.54, hard:['FRIEREN','MAID_CHLOE','SEOLHWA'], syn:['ARUNKA','AMID','RINAK','DARK_DIEANE']},
-  {id:'SEOLHWA', name:'설화', pick:9.49, win:62.67, ban:32.72, hard:['LIONHEART_CERMIA','FRIEREN','RINAK'], syn:['MAID_CHLOE','SKY_ILLYNAV','ARUNKA','ISEPUNISH_ARIA']},
-  {id:'ASHEN_ISERIA', name:'잿빛 숲의 이세리아', pick:9.30, win:62.36, ban:9.10, hard:['MAID_CHLOE','ARUNKA','RINAK'], syn:['FRIEREN','RINAK','FLAN','LIBRA_MASTER']},
-  {id:'MOON_LUNA', name:'신월의 루나', pick:8.87, win:60.54, ban:37.55, hard:['ARUNKA','FRIEREN','SEOLHWA'], syn:['FRIEREN','BELIAN','ARUNKA'], note:'프리렌 카운터는 주도권이 전제'},
-  {id:'TENEBRIA', name:'호반의 마녀 테네브리아', pick:8.80, win:60.45, ban:30.52, hard:['ARUNKA','MAID_CHLOE','FRIEREN'], syn:['RINAK','AMID','FRIEREN','NAVY_LANDY']},
-  {id:'FLAN', name:'한낮의 유영 플랑', pick:8.12, win:61.21, ban:30.61, hard:['RINAK','MAID_CHLOE','SEOLHWA'], syn:['HARSETI','WOLF_PEIRA','ORIGIN_RAS','GIO']},
-  {id:'HWAYOUNG', name:'방관자 화영', pick:7.25, win:54.36, ban:36.35, hard:['ORIGIN_RAS','MAID_CHLOE','SEOLHWA'], syn:['FRIEREN','ARUNKA','RINAK']},
-  {id:'BIRGITTA', name:'비르기타', pick:7.23, win:58.96, ban:28.15, hard:['RINAK','ARUNKA'], syn:['RUEL','ISEPUNISH_ARIA','YULHA']},
-  {id:'HARSETI', name:'하르세티', pick:6.47, win:59.91, ban:23.75, hard:['ORIGIN_RAS','SECRET','YULHA'], syn:['SKY_ILLYNAV','ARUNKA','ORIGIN_RAS']},
-  {id:'MORT', name:'모르트', pick:5.61, win:68.24, ban:49.48, hard:['ISEPUNISH_ARIA','YULHA','ARUNKA'], syn:['DARK_DIEANE','ARUNKA']},
-  {id:'HECKATE', name:'헤카테', pick:5.26, win:54.05, ban:26.22, hard:['ARUNKA','YULHA','RINAK'], syn:['RAN','MOON_LUNA']},
-  {id:'PUNISH_PUNISH_ARIA', name:'풍기위원 아리아', pick:5.07, win:58.98, ban:23.24, hard:['ORIGIN_RAS','DARK_DIEANE','RINAK'], syn:['ARUNKA','YULHA','SKY_ILLYNAV']},
-  {id:'FESTIVAL_EDA', name:'축제의 에다', pick:5.06, win:59.49, ban:27.50, hard:['FRIEREN','TENEBRIA','RINAK'], syn:['FRIEREN','MAID_CHLOE','ARUNKA']},
-  {id:'LRK', name:'라스트 라이더 크라우', pick:4.57, win:61.65, ban:18.74, hard:['ARUNKA','RINAK'], syn:['DARK_DIEANE','YULHA','SKY_ILLYNAV']},
+  {id:'ORIGIN_RAS', name:'기원의 라스', pick:30.73, win:61.67, ban:9.86, hard:['ARUNKA','RINAK','YULHA'], syn:['ARUNKA','YULHA','SKY_ILLYNAV','SEOLHWA']},
+  {id:'YULHA', name:'보건교사 율하', pick:29.20, win:62.40, ban:16.20, hard:['ARUNKA','ORIGIN_RAS','FRIEREN'], syn:['BELIAN','ORIGIN_RAS','SKY_ILLYNAV']},
+  {id:'ARUNKA', name:'조장 아룬카', pick:30.05, win:58.19, ban:14.27, hard:['FRIEREN','MAID_CHLOE','LIBRA_MASTER'], syn:['RINAK','BELIAN','SELINE','ORIGIN_RAS','NAVY_LANDY']},
+  {id:'RUEL', name:'빛의 루엘', pick:24.04, win:62.67, ban:18.66, hard:['ORIGIN_RAS','ARUNKA','YULHA'], syn:['YULHA','ARUNKA','ORIGIN_RAS']},
+  {id:'FRIEREN', name:'프리렌', pick:22.69, win:62.80, ban:16.21, hard:['RINAK','MAID_CHLOE','ARUNKA'], syn:['AMID','MAID_CHLOE','BELIAN','ASHEN_ISERIA','RAN','MOON_LUNA']},
+  {id:'DARK_DIEANE', name:'어둠의 목자 디에네', pick:22.16, win:63.12, ban:16.85, hard:['ORIGIN_RAS','ARUNKA','RINAK'], syn:['ORIGIN_RAS','RUEL','GHOST_POLITIS']},
+  {id:'RINAK', name:'리나크', pick:21.13, win:59.07, ban:15.24, hard:['ORIGIN_RAS','ARUNKA','YULHA'], syn:['ORIGIN_RAS','ARUNKA','YULHA']},
+  {id:'BELIAN', name:'벨리안', pick:18.52, win:60.59, ban:11.69, hard:['ORIGIN_RAS','ARUNKA','RINAK'], syn:['YULHA','ARUNKA','ORIGIN_RAS']},
+  {id:'SKY_ILLYNAV', name:'창공의 일리나브', pick:19.44, win:59.03, ban:11.81, hard:['ORIGIN_RAS','ARUNKA','RINAK'], syn:['YULHA','ARUNKA','ORIGIN_RAS']},
+  {id:'SECRET', name:'쾌속의 기수 세크레트', pick:17.65, win:60.91, ban:14.82, hard:['ARUNKA','ORIGIN_RAS','YULHA'], syn:['ORIGIN_RAS','YULHA','GIO']},
+  {id:'ISEPUNISH_ARIA', name:'보검의 군주 이세리아', pick:15.51, win:59.09, ban:17.35, hard:['MORT','YULHA','ARUNKA'], syn:['RUEL','ORIGIN_RAS','YULHA']},
+  {id:'LIBRA_MASTER', name:'천칭의 주인', pick:15.62, win:67.26, ban:21.03, hard:['ARUNKA','DARK_DIEANE','YULHA'], syn:['FRIEREN','ASHEN_ISERIA','ORIGIN_RAS']},
+  {id:'GHOST_POLITIS', name:'바다의 유령 폴리티스', pick:11.54, win:61.95, ban:9.59, hard:['ARUNKA','ORIGIN_RAS','RINAK'], syn:['ORIGIN_RAS','FRIEREN','ARUNKA']},
+  {id:'GIO', name:'지오', pick:11.49, win:54.18, ban:13.90, hard:['RINAK','FRIEREN','AMID','ARUNKA'], syn:['FLAN','FRIEREN','SUCCESSOR_TAEYU','SECRET']},
+  {id:'MAID_CHLOE', name:'메이드 클로에', pick:10.51, win:63.79, ban:17.08, hard:['FRIEREN','ARUNKA','RINAK'], syn:['FRIEREN','RINAK','SKY_ILLYNAV']},
+  {id:'SELINE', name:'영안의 셀린', pick:9.65, win:59.36, ban:16.28, hard:['FRIEREN','MAID_CHLOE','SEOLHWA'], syn:['ARUNKA','AMID','RINAK','DARK_DIEANE']},
+  {id:'SEOLHWA', name:'설화', pick:9.12, win:62.67, ban:32.80, hard:['LIONHEART_CERMIA','FRIEREN','RINAK'], syn:['MAID_CHLOE','SKY_ILLYNAV','ARUNKA','ISEPUNISH_ARIA']},
+  {id:'ASHEN_ISERIA', name:'잿빛 숲의 이세리아', pick:9.92, win:62.69, ban:9.04, hard:['MAID_CHLOE','ARUNKA','RINAK'], syn:['FRIEREN','RINAK','FLAN','LIBRA_MASTER']},
+  {id:'MOON_LUNA', name:'신월의 루나', pick:8.85, win:60.88, ban:37.92, hard:['ARUNKA','FRIEREN','SEOLHWA'], syn:['FRIEREN','BELIAN','ARUNKA'], note:'프리렌 카운터는 주도권이 전제'},
+  {id:'TENEBRIA', name:'호반의 마녀 테네브리아', pick:7.94, win:60.39, ban:30.02, hard:['ARUNKA','MAID_CHLOE','FRIEREN'], syn:['RINAK','AMID','FRIEREN','NAVY_LANDY']},
+  {id:'FLAN', name:'한낮의 유영 플랑', pick:6.92, win:60.75, ban:29.72, hard:['RINAK','MAID_CHLOE','SEOLHWA'], syn:['HARSETI','WOLF_PEIRA','ORIGIN_RAS','GIO']},
+  {id:'HWAYOUNG', name:'방관자 화영', pick:7.36, win:53.88, ban:36.07, hard:['ORIGIN_RAS','MAID_CHLOE','SEOLHWA'], syn:['FRIEREN','ARUNKA','RINAK']},
+  {id:'BIRGITTA', name:'비르기타', pick:7.23, win:58.96, ban:28.15, hard:['RINAK','ARUNKA'], syn:['RUEL','ISEPUNISH_ARIA','YULHA'], note:'기존 HTML/로그 메모'},
+  {id:'HARSETI', name:'하르세티', pick:6.43, win:58.88, ban:24.34, hard:['ORIGIN_RAS','SECRET','YULHA'], syn:['SKY_ILLYNAV','ARUNKA','ORIGIN_RAS']},
+  {id:'MORT', name:'모르트', pick:5.68, win:67.73, ban:49.11, hard:['ISEPUNISH_ARIA','YULHA','ARUNKA'], syn:['DARK_DIEANE','ARUNKA']},
+  {id:'HECKATE', name:'헤카테', pick:5.53, win:54.07, ban:25.72, hard:['ARUNKA','YULHA','RINAK'], syn:['RAN','MOON_LUNA']},
+  {id:'PUNISH_PUNISH_ARIA', name:'풍기위원 아리아', pick:4.59, win:58.18, ban:23.44, hard:['ORIGIN_RAS','DARK_DIEANE','RINAK'], syn:['ARUNKA','YULHA','SKY_ILLYNAV']},
+  {id:'FESTIVAL_EDA', name:'축제의 에다', pick:4.76, win:59.93, ban:26.44, hard:['FRIEREN','TENEBRIA','RINAK'], syn:['FRIEREN','MAID_CHLOE','ARUNKA']},
+  {id:'LRK', name:'라스트 라이더 크라우', pick:4.32, win:62.19, ban:18.05, hard:['ARUNKA','RINAK'], syn:['DARK_DIEANE','YULHA','SKY_ILLYNAV']},
   {id:'LIONHEART_CERMIA', name:'사자왕 체르미아', pick:2.88, win:57.73, ban:40.38, hard:['ORIGIN_RAS','YULHA'], syn:['ARUNKA']},
-  {id:'SUCCESSOR_TAEYU', name:'후계자 태유', pick:3.34, win:57.74, ban:45.84, hard:['RINAK','YULHA'], syn:['GIO','SECRET']},
-  {id:'SHADOW_SHU', name:'도시의 그림자 슈', pick:3.30, win:58.71, ban:23.37, hard:['ARUNKA','RINAK'], syn:['FRIEREN','MOON_LUNA']},
+  {id:'SUCCESSOR_TAEYU', name:'후계자 태유', pick:3.35, win:59.11, ban:46.31, hard:['RINAK','YULHA'], syn:['GIO','SECRET']},
+  {id:'SHADOW_SHU', name:'도시의 그림자 슈', pick:3.34, win:58.71, ban:22.90, hard:['ARUNKA','RINAK'], syn:['FRIEREN','MOON_LUNA']},
   {id:'NCECILIA', name:'나락의 세실리아', pick:3.02, win:61.26, ban:15.84, hard:['ARUNKA'], syn:['LIBRA_MASTER','RUEL']},
   {id:'RANDI', name:'랑디', pick:2.95, win:58.46, ban:27.58, hard:['ORIGIN_RAS','SECRET','TENEBRIA'], syn:['ARUNKA','SKY_ILLYNAV','YULHA']},
   {id:'DEATH_RAY', name:'죽음의 탐구자 레이', pick:3.12, win:57.92, ban:28.54, hard:['ARUNKA','RINAK'], syn:['DARK_DIEANE','WOLF_PEIRA']},
   {id:'STRAZE', name:'스트라제스', pick:2.75, win:64.45, ban:44.98, hard:['ARUNKA','ORIGIN_RAS'], syn:['RAN','DARK_DIEANE']},
-  {id:'WOLF_PEIRA', name:'고독한 늑대 페이라', pick:2.91, win:58.33, ban:5.47, hard:['FRIEREN','RINAK','YULHA'], syn:['FLAN','ARUNKA','DARK_DIEANE']},
+  {id:'WOLF_PEIRA', name:'고독한 늑대 페이라', pick:3.28, win:56.86, ban:5.45, hard:['FRIEREN','RINAK','YULHA'], syn:['FLAN','ARUNKA','DARK_DIEANE']},
   {id:'LIDICA', name:'리디카', pick:2.71, win:62.79, ban:18.03, hard:['ORIGIN_RAS','RINAK'], syn:['ARUNKA','RUEL']},
   {id:'YONG_SHARUN', name:'용왕 샤룬', pick:2.52, win:58.07, ban:31.42, hard:['DARK_DIEANE','RUEL'], syn:['RINAK','SECRET']},
   {id:'AMID', name:'아미드', pick:2.82, win:59.67, ban:14.67, hard:['RINAK','ARUNKA','MAID_CHLOE'], syn:['FRIEREN','TENEBRIA','ARUNKA','SELINE']},
-  {id:'ELENA_STAR', name:'별의 신탁 엘레나', pick:2.60, win:55.60, ban:5.50, hard:['ARUNKA','RINAK'], syn:['MOON_LUNA','SEOLHWA']},
-
-  {id:'VERONICA', name:'베로니카', pick:0.00, win:0.00, ban:0.00, hard:[], syn:['AMID','FRIEREN','RUEL']},
-  {id:'KISE', name:'키세', pick:0.00, win:0.00, ban:0.00, hard:[], syn:['AMID','FRIEREN','RUEL']},
+  {id:'ELENA_STAR', name:'별의 신탁 엘레나', pick:0.95, win:57.00, ban:22.00, hard:['ARUNKA','RINAK'], syn:['MOON_LUNA','SEOLHWA'], note:'로그 등장 영웅 · 참조용'},
+  {id:'VERONICA', name:'베로니카', pick:6.97, win:59.34, ban:28.32, hard:[], syn:['AMID','FRIEREN','RUEL']},
+  {id:'KISE', name:'키세', pick:0.00, win:0.00, ban:0.00, hard:[], syn:['AMID','FRIEREN','RUEL'], note:'기존 HTML/로그 메모'},
   {id:'ARAM', name:'아람', pick:2.40, win:61.12, ban:15.98, hard:[], syn:['FRIEREN','YULHA']},
-  {id:'SILVER_ARAMINTA', name:'백은칼날의 아라민타', pick:3.95, win:58.35, ban:40.61, hard:['SLOW_CORE'], syn:['FRIEREN','ARAM','TENEBRIA']},
+  {id:'SILVER_ARAMINTA', name:'백은칼날의 아라민타', pick:1.85, win:62.72, ban:40.61, hard:['SLOW_CORE'], syn:['FRIEREN','ARAM','TENEBRIA']},
   {id:'ABYSSAL_YUFINE', name:'심연의 유피네', pick:1.74, win:61.20, ban:24.84, hard:[], syn:['FRIEREN','YULHA','SKY_ILLYNAV']},
   {id:'AMBITIOUS_TYWIN', name:'야심가 타이윈', pick:0.00, win:0.00, ban:0.00, hard:[], syn:['BELIAN','ISEPUNISH_ARIA']},
   {id:'DEVIL_RUA', name:'소악마 루아', pick:2.24, win:63.91, ban:20.83, hard:[], syn:['RUEL','DARK_DIEANE']},
@@ -318,7 +317,7 @@ const HEROES = [
   {id:'SIDER', name:'시더', pick:2.00, win:54.00, ban:1.00, hard:[], syn:['FRIEREN','ISEPUNISH_ARIA'], note:'로그 등장 영웅 · 참조용'},
   {id:'VILDRED', name:'빌트레드', pick:2.35, win:61.47, ban:37.15, hard:[], syn:['ARUNKA'], note:'로그 등장 영웅 · 참조용'},
   {id:'FLOWER_LIDICA', name:'화원의 리디카', pick:0.70, win:52.79, ban:35.56, hard:['SECRET'], syn:['YULHA','HARSETI'], note:'로그 등장 영웅 · 참조용'},
-  {id:'SILVER_CHRISTY', name:'은결의 크리스티', pick:2.07, win:55.48, ban:31.00, hard:[], syn:['ARAM','SELINE'], note:'로그 등장 영웅 · 참조용'},
+  {id:'SILVER_CHRISTY', name:'은결의 크리스티', pick:2.07, win:55.48, ban:31.10, hard:[], syn:['ARAM','SELINE'], note:'로그 등장 영웅 · 참조용'},
   {id:'MOON_RABBIT_DOMINIEL', name:'달토끼 도미니엘', pick:1.58, win:60.28, ban:29.20, hard:[], syn:['YULHA','BELIAN'], note:'로그 등장 영웅 · 참조용'},
   {id:'DESIGNER_LILIBET', name:'디자이너 릴리벳', pick:0.92, win:56.16, ban:38.37, hard:['DEBUFF_CORE'], syn:['YULHA'], note:'로그 등장 영웅 · 참조용'},
   {id:'COMMANDER_PAVEL', name:'사령관 파벨', pick:2.25, win:64.61, ban:32.95, hard:['SLOW_CORE'], syn:['STRAZE','ASHEN_ISERIA'], note:'로그 등장 영웅 · 참조용'},
@@ -328,21 +327,21 @@ const HEROES = [
   {id:'BLOOD_KARIN', name:'혈검 카린', pick:1.90, win:54.20, ban:0.90, hard:['FRONTLINE_CORE'], syn:['AMID'], note:'로그 등장 영웅 · 참조용'},
   {id:'SUMMER_CHARLOTTE', name:'여름의 방학 샬롯', pick:2.20, win:54.80, ban:1.20, hard:['GREEN_CORE'], syn:['SUCCESSOR_TAEYU','GIO'], note:'로그 등장 영웅 · 참조용'},
   {id:'SAGE_BAAL', name:'현자 바알&세잔', pick:2.00, win:54.60, ban:1.10, hard:['TURN_ONE_CORE'], syn:['ELENA'], note:'로그 등장 영웅 · 참조용'},
-  {id:'SARMIA', name:'사르미아', pick:1.80, win:54.00, ban:0.80, hard:['BRUISER_CORE'], syn:['DARK_DIEANE','RUEL'], note:'로그 등장 영웅 · 참조용'},
-  {id:'SCENT_POLITIS', name:'바다의 유령 폴리티스', pick:13.09, win:60.83, ban:9.01, hard:['ARUNKA','ORIGIN_RAS','RINAK'], syn:['ORIGIN_RAS','FRIEREN','ARUNKA','DARK_DIEANE'], note:'폴리티스 계열 로그 표기'},
+  {id:'SARMIA', name:'사르미아', pick:1.10, win:59.12, ban:48.42, hard:['BRUISER_CORE'], syn:['DARK_DIEANE','RUEL'], note:'로그 등장 영웅 · 참조용'},
+  {id:'SCENT_POLITIS', name:'바다의 유령 폴리티스', pick:11.54, win:61.95, ban:9.59, hard:['ARUNKA','ORIGIN_RAS','RINAK'], syn:['ORIGIN_RAS','FRIEREN','ARUNKA'], note:'폴리티스 계열 로그 표기'},
   {id:'CELINE', name:'셀린', pick:1.26, win:55.47, ban:41.37, hard:['FRIEREN'], syn:['ARUNKA'], note:'로그 등장 영웅 · 참조용'},
   {id:'RAN', name:'란', pick:2.85, win:60.02, ban:3.59, hard:['LIBRA_MASTER','ORIGIN_RAS','RINAK'], syn:['DARK_DIEANE','RUEL','FRIEREN']},
-  {id:'AKI', name:'아키', pick:1.01, win:60.00, ban:39.63, hard:['ARUNKA','YULHA'], syn:['ORIGIN_RAS','DARK_DIEANE']},
+  {id:'AKI', name:'아키', pick:1.01, win:60.00, ban:39.63, hard:['ARUNKA','YULHA'], syn:['ORIGIN_RAS','DARK_DIEANE'], note:'기존 HTML/로그 메모'},
   {id:'MYTH_ACHATES', name:'미지의 가능성 아카테스', pick:2.38, win:57.94, ban:25.25, hard:['MOON_LUNA','GIO','FRIEREN'], syn:['RINAK','FRIEREN','SELINE']},
   {id:'BASE_POLITIS', name:'폴리티스', pick:1.06, win:61.82, ban:32.65, hard:['ARUNKA','ORIGIN_RAS'], syn:['YULHA','RUEL','FLOWER_LIDICA']},
   {id:'SENUA', name:'제뉴아', pick:1.13, win:61.91, ban:25.48, hard:['FRIEREN'], syn:['ARUNKA','YULHA']},
   {id:'DRIFTER_LUDWIG', name:'영겁의 표류자 루트비히', pick:1.07, win:56.82, ban:28.71, hard:['ARUNKA'], syn:['RUEL','YULHA']},
   {id:'HWARAN_RAVI', name:'화란의 라비', pick:1.07, win:54.61, ban:21.77, hard:['ORIGIN_RAS','SECRET'], syn:['MOON_RABBIT_DOMINIEL','PUNISH_PUNISH_ARIA']},
-  {id:'TWISTED_KAYRON', name:'뒤틀린 망령 카일론', pick:0.87, win:60.44, ban:32.39, hard:['FRIEREN'], syn:['ARUNKA','SECRET']},
+  {id:'TWISTED_KAYRON', name:'뒤틀린 망령 카일론', pick:0.87, win:60.44, ban:32.39, hard:['FRIEREN'], syn:['ARUNKA','SECRET'], note:'로그 등장 영웅 · 참조용'},
   {id:'WESTWIND_SHURI', name:'서풍의 처형자 슈리', pick:0.84, win:56.95, ban:31.70, hard:['YULHA'], syn:['ARAM','VILDRED']},
-  {id:'SHURI', name:'슈리', pick:0.83, win:62.48, ban:42.68, hard:['BELIAN'], syn:['VILDRED','SECRET']},
-  {id:'MEDIATOR_KAWERIK', name:'조율자 카웨릭', pick:0.73, win:54.01, ban:24.18, hard:['CONTROL_CORE'], syn:['LRK','SECRET']},
-  {id:'DARKWALL_CHARLOTTE', name:'어린 여왕 샬롯', pick:0.71, win:60.72, ban:20.65, hard:['ARUNKA'], syn:['RUEL','YULHA']},
+  {id:'SHURI', name:'슈리', pick:0.83, win:62.48, ban:42.68, hard:['BELIAN'], syn:['VILDRED','SECRET'], note:'기존 HTML/로그 메모'},
+  {id:'MEDIATOR_KAWERIK', name:'조율자 카웨릭', pick:0.73, win:54.01, ban:24.18, hard:['CONTROL_CORE'], syn:['LRK','SECRET'], note:'기존 HTML/로그 메모'},
+  {id:'DARKWALL_CHARLOTTE', name:'어린 여왕 샬롯', pick:0.71, win:60.72, ban:20.65, hard:['ARUNKA'], syn:['RUEL','YULHA'], note:'기존 HTML/로그 메모'},
   {id:'MILIM', name:'밀림', pick:0.95, win:57.00, ban:22.00, hard:['FRIEREN'], syn:['ARUNKA','SECRET'], note:'로그 등장 영웅 · 참조용'},
   {id:'NAKWOL', name:'낙월', pick:0.95, win:57.00, ban:22.00, hard:['YULHA'], syn:['ARUNKA','RINAK'], note:'로그 등장 영웅 · 참조용'},
   {id:'BENIMARU', name:'베니마루', pick:0.95, win:57.00, ban:22.00, hard:['SECRET'], syn:['ARUNKA','ISEPUNISH_ARIA'], note:'로그 등장 영웅 · 참조용'},
@@ -351,14 +350,15 @@ const HEROES = [
   {id:'PERN', name:'페른', pick:0.95, win:57.00, ban:22.00, hard:['ARUNKA'], syn:['FRIEREN','YULHA'], note:'로그 등장 영웅 · 참조용'},
   {id:'KRAU', name:'크라우', pick:0.95, win:57.00, ban:22.00, hard:['ARUNKA'], syn:['RUEL','DARK_DIEANE'], note:'로그 등장 영웅 · 참조용'},
   {id:'WANDERER_SILK', name:'방랑자 실크', pick:0.95, win:57.00, ban:22.00, hard:['FRIEREN'], syn:['VILDRED','LIDICA'], note:'로그 등장 영웅 · 참조용'},
-  {id:'NAVY_LANDY', name:'해군대령 랑디', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
+  {id:'NAVY_LANDY', name:'해군대령 랑디', pick:2.95, win:58.46, ban:27.58, hard:['ORIGIN_RAS','SECRET','TENEBRIA'], syn:['ARUNKA','SKY_ILLYNAV','YULHA'], note:'이름만 반영 · 수치 미입력'},
   {id:'DESERT_JEWEL_BASAR', name:'사막의 보석 바사르', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
   {id:'AUXILIARY_LOTS', name:'보조형 랏츠', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
   {id:'PIRATE_CAPTAIN_FLAN', name:'해적 선장 플랑', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
   {id:'JACK_O', name:'잭 오', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
   {id:'ELVIRA', name:'엘비라', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
   {id:'TORAMI', name:'토라미', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
-  {id:'VACATION_YUFINE', name:'바캉스 유피네', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},];
+  {id:'VACATION_YUFINE', name:'바캉스 유피네', pick:0.00, win:0.00, ban:0.00, hard:[], syn:[], note:'이름만 반영 · 수치 미입력'},
+];
 
 const HERO_BY_ID = Object.fromEntries(HEROES.map(h => [h.id, h]));
 const HERO_ID_ALIASES = {SCENT_POLITIS:'GHOST_POLITIS', ELENA_STAR:'STAR_ELENA', PUNISH_ARIA:'PUNISH_PUNISH_ARIA', ARIA:'PUNISH_PUNISH_ARIA'};
@@ -1044,7 +1044,7 @@ function scoreHero(candidateId, myPicks, oppPicks, stage){
   const completion = Math.min(5.2, completionRaw * 0.58) * (1 / (1 + Math.max(0, packageLinks - 1) * 0.3));
 
   const counters = counterBonus(c, oppPicks) * 0.85;
-  const early = earlyPickValue(c, myPicks, oppPicks) * 0.65 * reliability;
+  const early = earlyPickValue(c, myPicks, oppPicks) * 0.78 * reliability;
   const urgency = (c.ban * 0.05 + commonThreatWeight(c) + logBanPressureBonus(c, myPicks, oppPicks, stage)) * reliability;
   const exposure = -finalBanExposurePenalty(c, myPicks);
   const relief = decoyRelief(c);
@@ -1526,6 +1526,10 @@ render();
 </script>
 </body>
 </html>
+
+
+
+
 
 
 

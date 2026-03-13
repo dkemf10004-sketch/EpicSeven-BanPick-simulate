@@ -196,7 +196,12 @@
         </div>
       </div>
 
-
+      <div class="panel" id="incomingBanPressurePanel" style="display:none;">
+        <div class="panelHeader"><h3>상대 최종밴 예상 순위</h3><span class="pill">밴가드 제외</span></div>
+        <div class="panelBody">
+          <div class="list" id="incomingBanPressure"></div>
+        </div>
+      </div>
     </div>
 
     <div class="centercol centerStack">
@@ -281,10 +286,10 @@ const HEROES = [
   {id:'RINAK', name:'리나크', pick:21.13, win:59.07, ban:15.24, hard:['ORIGIN_RAS','ARUNKA','YULHA'], syn:['ORIGIN_RAS','ARUNKA','YULHA'], tags:['first_turn']},
   {id:'BELIAN', name:'벨리안', pick:18.52, win:60.59, ban:11.69, hard:['ORIGIN_RAS','ARUNKA','RINAK'], syn:['YULHA','ARUNKA','ORIGIN_RAS']},
   {id:'SKY_ILLYNAV', name:'창공의 일리나브', pick:19.44, win:59.03, ban:11.81, hard:['ORIGIN_RAS','ARUNKA','RINAK'], syn:['YULHA','ARUNKA','ORIGIN_RAS']},
-  {id:'SECRET', name:'쾌속의 기수 세크레트', pick:17.65, win:60.91, ban:14.82, hard:['ARUNKA','ORIGIN_RAS','YULHA'], syn:['ORIGIN_RAS','YULHA','GIO']},
+  {id:'SECRET', name:'쾌속의 기수 세크레트', pick:17.65, win:60.91, ban:14.82, hard:['ARUNKA','ORIGIN_RAS','YULHA'], syn:['ORIGIN_RAS','YULHA','GIO'], tags:['first_turn']},
   {id:'ISEPUNISH_ARIA', name:'보검의 군주 이세리아', pick:15.51, win:59.09, ban:17.35, hard:['MORT','YULHA','ARUNKA'], syn:['RUEL','ORIGIN_RAS','YULHA']},
   {id:'LIBRA_MASTER', name:'천칭의 주인', pick:15.62, win:67.26, ban:21.03, hard:['ARUNKA','DARK_DIEANE','YULHA'], syn:['FRIEREN','ASHEN_ISERIA','ORIGIN_RAS']},
-  {id:'GHOST_POLITIS', name:'바다의 유령 폴리티스', pick:11.54, win:61.95, ban:9.59, hard:['ARUNKA','ORIGIN_RAS','RINAK'], syn:['ORIGIN_RAS','FRIEREN','ARUNKA']},
+  {id:'GHOST_POLITIS', name:'바다의 유령 폴리티스', pick:11.54, win:61.95, ban:9.59, hard:['ARUNKA','ORIGIN_RAS','RINAK'], syn:['ORIGIN_RAS','FRIEREN','ARUNKA'], tags:['first_turn']},
   {id:'GIO', name:'지오', pick:11.49, win:54.18, ban:13.90, hard:['RINAK','FRIEREN','AMID','ARUNKA'], syn:['FLAN','FRIEREN','SUCCESSOR_TAEYU','SECRET'], tags:['first_turn']},
   {id:'MAID_CHLOE', name:'메이드 클로에', pick:10.51, win:63.79, ban:17.08, hard:['FRIEREN','ARUNKA','RINAK'], syn:['FRIEREN','RINAK','SKY_ILLYNAV']},
   {id:'SELINE', name:'영안의 셀린', pick:9.65, win:59.36, ban:16.28, hard:['FRIEREN','MAID_CHLOE','SEOLHWA'], syn:['ARUNKA','AMID','RINAK','DARK_DIEANE']},
@@ -986,12 +991,13 @@ function harsetiPickedOpenCounterPenalty(candidate, myPicks, oppPicks, stage){
   if(!hasOpponentHarsetiPick(oppPicks)) return 0;
   if(!isHarsetiRiskHero(candidate, myPicks, oppPicks, stage)) return 0;
   const metaRaw = Math.max(0, candidate.win * 0.18 + candidate.pick * 0.16 + candidate.ban * 0.03);
-  const normalized = Math.min(1, metaRaw / 15.5);
+  const normalized = Math.min(1, metaRaw / 16.8);
   const isFirstTurn = hasHarsetiRiskTag(candidate, 'first_turn', myPicks, oppPicks, stage);
   const isSpeedContest = hasHarsetiRiskTag(candidate, 'speed_contest', myPicks, oppPicks, stage);
-  let penalty = 5 - normalized * 3;
-  if(isFirstTurn && isSpeedContest) penalty += 0.2;
-  if(HIGHROLLER_TURN_ONE.openers.includes(candidate.id)) penalty += 0.2;
+  let penalty = 5.15 - normalized * 3.15;
+  if(isFirstTurn && isSpeedContest) penalty += 0.25;
+  if(HIGHROLLER_TURN_ONE.openers.includes(candidate.id)) penalty += 0.35;
+  else if(HIGHROLLER_TURN_ONE.follow.includes(candidate.id)) penalty += 0.15;
   return Math.max(2.0, Math.min(5.0, penalty));
 }
 
@@ -1023,7 +1029,8 @@ function projectedOpenCounterPenalty(candidate, myPicks, oppPicks, stage){
   const resilience = openCounterResilience(candidate);
   const projectedPenalty = rawPenalty * (0.92 * resilience + 0.08);
   if(!harsetiPenalty) return projectedPenalty;
-  return Math.min(6.5, projectedPenalty + harsetiPenalty * (projectedPenalty > 0 ? 0.45 : 1));
+  const harsetiBoost = projectedPenalty > 0 ? Math.max(2.0, Math.min(5.0, harsetiPenalty * 0.95)) : harsetiPenalty;
+  return Math.max(projectedPenalty, Math.min(10.8, projectedPenalty + harsetiBoost));
 }
 
 function completionPressureBonus(candidate, myPicks){
@@ -1081,11 +1088,11 @@ function harsetiPickedFirstTurnPenalty(candidate, oppPicks, myPicks=[], stage=nu
   if(!hasOpponentHarsetiPick(oppPicks)) return 0;
   const isFirstTurn = hasHarsetiRiskTag(candidate, 'first_turn', myPicks, oppPicks, stage);
   const isSpeedContest = hasHarsetiRiskTag(candidate, 'speed_contest', myPicks, oppPicks, stage);
-  let penalty = isFirstTurn ? 2.35 : 2.05;
-  if(isFirstTurn && isSpeedContest) penalty += 0.45;
-  if(HIGHROLLER_TURN_ONE.openers.includes(candidate.id)) penalty += 0.55;
-  else if(HIGHROLLER_TURN_ONE.follow.includes(candidate.id)) penalty += 0.35;
-  return Math.min(3.85, penalty);
+  let penalty = isFirstTurn ? 0.9 : 0.7;
+  if(isFirstTurn && isSpeedContest) penalty += 0.15;
+  if(HIGHROLLER_TURN_ONE.openers.includes(candidate.id)) penalty += 0.15;
+  else if(HIGHROLLER_TURN_ONE.follow.includes(candidate.id)) penalty += 0.1;
+  return Math.min(1.4, penalty);
 }
 // 하르세티 오픈 패널티는 선턴잡이/속기각에만 약하게 적용
 function harsetiOpenFirstTurnPenalty(candidate, myPicks=[], oppPicks=[], stage=null){
@@ -1127,14 +1134,16 @@ function turnOneReplicabilityPenalty(candidate, myPicks, oppPicks, stage){
   const alliedOpeners = myPicks.filter(id => HIGHROLLER_TURN_ONE.openers.includes(id)).length;
   const blockers = oppPicks.filter(id => HIGHROLLER_TURN_ONE.blockers.includes(id)).length;
   const oppHasHarseti = hasOpponentHarsetiPick(oppPicks);
-  let score = harsetiOpenFirstTurnPenalty(candidate, myPicks, oppPicks, stage) + harsetiPickedFirstTurnPenalty(candidate, oppPicks, myPicks, stage);
-  if(!HIGHROLLER_TURN_ONE.core.includes(candidate.id)) return Math.min(oppHasHarseti ? 4.0 : 2.4, score);
-  if(state.side!=='first') score += 0.45;
-  if(totalPicked <= 2 && HIGHROLLER_TURN_ONE.follow.includes(candidate.id) && alliedOpeners===0) score += 0.35;
-  if(totalPicked >= 2 && alliedTempo===0 && !HIGHROLLER_TURN_ONE.openers.includes(candidate.id)) score += 0.25;
-  if(blockers) score += Math.min(0.9, blockers * 0.3);
-  if(candidate.ban >= 30 && alliedTempo < 2) score += 0.2;
-  return Math.min(oppHasHarseti ? 4.0 : 3.0, score);
+  let score = oppHasHarseti
+    ? harsetiPickedFirstTurnPenalty(candidate, oppPicks, myPicks, stage) + harsetiOpenFirstTurnPenalty(candidate, myPicks, oppPicks, stage) * 0.2
+    : harsetiOpenFirstTurnPenalty(candidate, myPicks, oppPicks, stage);
+  if(!HIGHROLLER_TURN_ONE.core.includes(candidate.id)) return Math.min(oppHasHarseti ? 1.6 : 2.4, score);
+  if(state.side!=='first') score += oppHasHarseti ? 0.12 : 0.45;
+  if(totalPicked <= 2 && HIGHROLLER_TURN_ONE.follow.includes(candidate.id) && alliedOpeners===0) score += oppHasHarseti ? 0.12 : 0.35;
+  if(totalPicked >= 2 && alliedTempo===0 && !HIGHROLLER_TURN_ONE.openers.includes(candidate.id)) score += oppHasHarseti ? 0.08 : 0.25;
+  if(blockers) score += Math.min(oppHasHarseti ? 0.35 : 0.9, blockers * (oppHasHarseti ? 0.12 : 0.3));
+  if(candidate.ban >= 30 && alliedTempo < 2) score += oppHasHarseti ? 0.08 : 0.2;
+  return Math.min(oppHasHarseti ? 1.8 : 3.0, score);
 }
 
 function heroReliabilityMultiplier(hero){
@@ -1374,41 +1383,48 @@ function computeSynergyPanels(){
   }).filter(panel => panel && panel.items.length);
 }
 // 최종 밴 위협도 방향 수정
+function rankFinalBanTargets(targetIds, alliedIds, enemyIds, fallbackReason){
+  return targetIds.map(id => {
+    const hero = HERO_BY_ID[id];
+    if(!hero) return null;
+    let threat = 0;
+    const reasons = [];
+    for(const enemyId of enemyIds){
+      const enemy = HERO_BY_ID[enemyId];
+      if(!enemy) continue;
+      if((hero.hard||[]).includes(enemyId)){
+        threat += 10.5;
+        reasons.push(`${enemy.name} 상대로 위협`);
+      }
+      if((enemy.hard||[]).includes(id)) threat -= 3.8;
+      for(const rel of NUANCED_COUNTERS){
+        if(rel.counter === id && rel.target === enemyId){
+          threat += rel.weight * 1.45;
+          reasons.push(`${enemy.name} 카운터`);
+        }
+        if(rel.counter === enemyId && rel.target === id) threat -= rel.weight * 0.65;
+      }
+    }
+    const alliedPack = packageBonus(hero.id, alliedIds, enemyIds) * 1.15;
+    const alliedSynergy = synergyBonus(hero, alliedIds) * 0.45;
+    const score = threat + alliedPack + alliedSynergy + hero.pick * 0.04 + hero.ban * 0.03;
+    const reason = [...new Set(reasons)].slice(0,2).join(' · ') || fallbackReason;
+    return {hero, score, reason};
+  }).filter(Boolean).sort((a,b)=>b.score-a.score);
+}
 function computeFinalBanSuggestion(){
   const stage = currentStage();
   if(!stage || stage.type!=='finalBan' || stage.side!=='me') return [];
   const opp = oppBoardAfterCurrent().filter(id => id !== getVanguard('opp'));
   const my = myBoardAfterCurrent();
-  return opp.map(id => {
-    const h = HERO_BY_ID[id];
-    let threat = 0;
-    const reasons = [];
-    for(const myId of my){
-      const me = HERO_BY_ID[myId];
-      if(!me) continue;
-      if((h.hard||[]).includes(myId)){
-        threat += 10.5;
-        reasons.push(`${me.name} 상대로 위협`);
-      }
-      if((me.hard||[]).includes(id)){
-        threat -= 3.8;
-      }
-      for(const rel of NUANCED_COUNTERS){
-        if(rel.counter === id && rel.target === myId){
-          threat += rel.weight * 1.45;
-          reasons.push(`${me.name} 카운터`);
-        }
-        if(rel.counter === myId && rel.target === id){
-          threat -= rel.weight * 0.65;
-        }
-      }
-    }
-    const enemyPack = packageBonus(h.id, opp, my) * 1.15;
-    const enemySynergy = synergyBonus(h, opp) * 0.45;
-    const score = threat + enemyPack + enemySynergy + h.pick * 0.04 + h.ban * 0.03;
-    const reason = [...new Set(reasons)].slice(0,2).join(' · ') || '내 조합 기준 위협도';
-    return {hero:h, score, reason};
-  }).sort((a,b)=>b.score-a.score).slice(0,5);
+  return rankFinalBanTargets(opp, opp, my, '내 조합 기준 위협도').slice(0,5);
+}
+function computeExpectedOppFinalBanPressure(){
+  const stage = currentStage();
+  if(!stage || stage.type!=='finalBan' || stage.side!=='me') return [];
+  const my = myBoardAfterCurrent().filter(id => id !== getVanguard('me'));
+  const opp = oppBoardAfterCurrent();
+  return rankFinalBanTargets(my, my, opp, '상대가 끊고 싶어할 내 조합 축');
 }
 function slotHTML(heroId, ownerKey, cls='', isVanguard=false){
   const vgClass = isVanguard ? ' vanguard' : '';
@@ -1606,13 +1622,20 @@ function renderRecs(){
   const recBox = document.getElementById('recommendations');
   const pairBox = document.getElementById('pairRecommendations');
   const modePill = document.getElementById('recModePill');
+  const incomingBanPanel = document.getElementById('incomingBanPressurePanel');
+  const incomingBanBox = document.getElementById('incomingBanPressure');
   if(stage && stage.type==='finalBan' && stage.side==='me'){
     const bans = computeFinalBanSuggestion();
+    const incoming = computeExpectedOppFinalBanPressure();
     modePill.textContent = '내 최종 밴 추천';
-    recBox.innerHTML = bans.map((b, i) => `<div class="recCard"><div class="recHead"><div><strong>#${i+1} ${b.hero.name}</strong><div class="tiny">내 조합 기준 위협 제거 추천</div></div><div class="score">${b.score.toFixed(1)}</div></div></div>`).join('') || '<div class="tiny">추천할 상대 밴 대상이 없습니다.</div>';
+    recBox.innerHTML = bans.map((b, idx) => `<div class="recCard"><div class="recHead"><div><strong>#${idx+1} ${b.hero.name}</strong><div class="tiny">내 조합 기준 위협 제거 추천</div></div><div class="score">${b.score.toFixed(1)}</div></div></div>`).join('') || '<div class="tiny">추천할 상대 밴 대상이 없습니다.</div>';
+    if(incomingBanPanel) incomingBanPanel.style.display = 'block';
+    if(incomingBanBox) incomingBanBox.innerHTML = incoming.map((b, idx) => `<div class="pairItem"><strong>#${idx+1} ${b.hero.name}</strong><div class="tiny">밴 압력 ${b.score.toFixed(1)} · ${b.reason}</div></div>`).join('') || '<div class="tiny">밴가드를 제외하면 아직 예상할 내 픽이 없습니다.</div>';
     pairBox.innerHTML = '<div class="tiny">최종 밴 단계에서는 페어 추천이 비활성화됩니다.</div>';
     return;
   }
+  if(incomingBanPanel) incomingBanPanel.style.display = 'none';
+  if(incomingBanBox) incomingBanBox.innerHTML = '';
   const {stage: nextStage, pickLabel, remainingSlots, singles, pairs} = computeRecommendations();
   const picked = allPickArrays();
   const pre = new Set(actualPrebans());
@@ -1657,7 +1680,6 @@ function renderRecs(){
     pairBox.innerHTML = '<div class="tiny">다음 내 단계가 1픽이라 페어 추천은 비활성화됩니다.</div>';
   }
 }
-
 function render(){
   renderStageInfo();
   renderPrebans();
@@ -1699,6 +1721,14 @@ render();
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
 
 
 

@@ -454,7 +454,11 @@ const RAW_PACKAGES = [
   {name:'빌트레드-프리렌-잿숲', members:['VILDRED','FRIEREN','ASHEN_ISERIA'], weight:11},
   {name:'잿숲-아룬카-프리렌', members:['ASHEN_ISERIA','ARUNKA','FRIEREN'], weight:11},
   {name:'기라스-보세리아-루엘-세크레트', members:['ORIGIN_RAS','ISEPUNISH_ARIA','RUEL','SECRET'], weight:10},
-  {name:'사령관 파벨-잿숲-프리렌', members:['COMMANDER_PAVEL','ASHEN_ISERIA','FRIEREN'], weight:9}
+  {name:'사령관 파벨-잿숲-프리렌', members:['COMMANDER_PAVEL','ASHEN_ISERIA','FRIEREN'], weight:9},
+  {name:'리나크-율하-보세리아', members:['RINAK','YULHA','ISEPUNISH_ARIA'], weight:8},
+  {name:'리나크-모르트-율하', members:['RINAK','MORT','YULHA'], weight:8},
+  {name:'리나크-율하-호테네', members:['RINAK','YULHA','TENEBRIA'], weight:7},
+  {name:'유령 폴리티스-보세리아-프리렌', members:['GHOST_POLITIS','ISEPUNISH_ARIA','FRIEREN'], weight:7}
 ];
 const CLEAN_PACKAGES = (() => {
   const seen = new Map();
@@ -490,13 +494,13 @@ const LOG_ROLE_CONFIDENCE_STATS = {
   },
   vanguard:{
     ASHEN_ISERIA:{w:26,l:14,s:5,m:19}, AMID:{w:8,l:0,s:2,m:6}, MAID_CHLOE:{w:8,l:2,s:3,m:7}, RAN:{w:5,l:0,s:3,m:3},
-    ISEPUNISH_ARIA:{w:10,l:7,s:6,m:6}, HARSETI:{w:4,l:1,s:4,m:2}, RUEL:{w:6,l:4,s:4,m:4}, HECKATE:{w:6,l:4,s:5,m:3},
+    ISEPUNISH_ARIA:{w:12,l:8,s:6,m:8}, HARSETI:{w:4,l:1,s:4,m:2}, RUEL:{w:8,l:5,s:5,m:5}, HECKATE:{w:6,l:4,s:5,m:3},
     ORIGIN_RAS:{w:3,l:1,s:2,m:2}, RINAK:{w:22,l:21,s:5,m:16}, ELENA:{w:3,l:2,s:2,m:3}, LIONHEART_CERMIA:{w:1,l:0,s:1,m:1},
     MOON_LUNA:{w:1,l:0,s:1,m:1}, YULHA:{w:1,l:0,s:1,m:1}, FRIEREN:{w:4,l:4,s:5,m:2}, SELINE:{w:3,l:3,s:3,m:2},
     DEVIL_RUA:{w:2,l:2,s:2,m:1}, MYTH_ACHATES:{w:2,l:2,s:3,m:1}, SECRET:{w:2,l:2,s:3,m:1}, WOLF_PEIRA:{w:1,l:1,s:2,m:1},
     ARUNKA:{w:3,l:4,s:4,m:1}, SEOLHWA:{w:3,l:4,s:4,m:2}, PUNISH_PUNISH_ARIA:{w:0,l:1,s:1,m:0}, MOON_RABBIT_DOMINIEL:{w:0,l:1,s:1,m:0},
     BABY_SHENNA:{w:0,l:1,s:1,m:0}, LRK:{w:0,l:1,s:1,m:0}, AUXILIARY_LOTS:{w:0,l:1,s:1,m:0}, YONG_SHARUN:{w:0,l:1,s:1,m:0},
-    STAR_ELENA:{w:0,l:1,s:1,m:0}, SAGE_BAAL:{w:0,l:1,s:1,m:0}, AMING:{w:0,l:1,s:1,m:0}, GHOST_POLITIS:{w:9,l:11,s:6,m:3},
+    STAR_ELENA:{w:0,l:1,s:1,m:0}, SAGE_BAAL:{w:0,l:1,s:1,m:0}, AMING:{w:0,l:1,s:1,m:0}, GHOST_POLITIS:{w:12,l:14,s:7,m:5},
     SKY_ILLYNAV:{w:2,l:4,s:4,m:1}, SILVER_CHRISTY:{w:0,l:2,s:2,m:0}, VERONICA:{w:0,l:2,s:2,m:0}, DARK_DIEANE:{w:0,l:2,s:2,m:0},
     FESTIVAL_EDA:{w:0,l:3,s:3,m:0}, GIO:{w:7,l:11,s:5,m:2}, TENEBRIA:{w:0,l:5,s:4,m:0}, BELIAN:{w:3,l:9,s:3,m:2}, MORT:{w:5,l:14,s:3,m:2}
   },
@@ -1721,6 +1725,7 @@ render();
 </script>
 </body>
 </html>
+
 
 
 

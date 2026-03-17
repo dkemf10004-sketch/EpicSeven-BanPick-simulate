@@ -6358,18 +6358,18 @@ const compiledPatternState = {
   loadedEntries:0
 };
 const EMBEDDED_COMPILED_PATTERN_DATA = {
-  version: 2,
-  source: { mode: 'minimal-embedded-stub' },
-  contract: { layer: 'pattern-only', meta_overwrite: false },
-  heroPresenceStats: {},
-  heroPrebanStats: {},
-  heroFirstPickStats: {},
-  heroVanguardStats: {},
-  heroBanPressureStats: {},
-  heroPairStats: {},
-  heroPackageStats: {},
-  weakMatchupHints: {},
-  unresolvedBattleHeroStrings: [],
+  version: 3,
+  source: { mode: 'minimal-relation-stub' },
+  matchupMatrix: {},
+  synergyMatrix: {},
+  roleScores: {
+    firstpick: {},
+    vanguard: {},
+    preban: {},
+    banPressure: {},
+    presence: {},
+    protection: {}
+  },
   buildSummary: { embeddedStub: true }
 };
 let ws = null;
@@ -7910,245 +7910,406 @@ function updateBattlecollectInfo(extraText=''){
   if(!el) return;
   if(compiledPatternState.ready && compiledPatternState.compiled){
     const compiled = compiledPatternState.compiled;
-    const heroCount =
-      compiled.heroPresenceStats instanceof Map
-        ? compiled.heroPresenceStats.size
-        : Object.keys(compiled.heroPresenceStats || {}).length;
-    const pairCount =
-      compiled.heroPairStats instanceof Map
-        ? compiled.heroPairStats.size
-        : Object.keys(compiled.heroPairStats || {}).length;
-    const packageCount =
-      compiled.heroPackageStats instanceof Map
-        ? compiled.heroPackageStats.size
-        : Object.keys(compiled.heroPackageStats || {}).length;
-    if(compiledPatternState.raw?.buildSummary?.embeddedStub){
-      const base = '내장 pattern stub 적용 · 필요 시 compiled_patterns.json 로컬 override';
-      el.textContent = extraText ? `${base} · ${extraText}` : base;
-      return;
-    }
-    const base = `compiled pattern hero ${heroCount} · pair ${pairCount} · package ${packageCount}`;
-    el.textContent = extraText ? `${base} · ${extraText}` : base;
+    const heroCount = compiled.heroIds?.length || HEROES.length;
+    const counterCount = Number(compiled.matchupRelationCount || 0);
+    const synergyCount = Number(compiled.synergyRelationCount || 0);
+    const base = compiledPatternState.raw?.buildSummary?.embeddedStub
+      ? '?? relation stub ?? ? ?? compiled matrix override ??'
+      : `relation matrix hero ${heroCount} ? counter ${counterCount} ? synergy ${synergyCount}`;
+    el.textContent = extraText ? `${base} ? ${extraText}` : base;
     return;
   }
-  el.textContent = compiledPatternState.lastError || '내장 pattern stub 적용 · 필요 시 compiled_patterns.json 로컬 override';
+  el.textContent = compiledPatternState.lastError || '?? compiled relation matrix ?? ??';
 }
-function getCompiledPatternDataUrl(){
-  return '../compiled_pattern_data.json';
+function getCompiledMatchupMatrixUrl(){
+  return './compiled_matchup_matrix.json';
+}
+function getCompiledSynergyMatrixUrl(){
+  return './compiled_synergy_matrix.json';
+}
+function getCompiledRoleScoresUrl(){
+  return './compiled_role_scores.json';
 }
 function getHeroLegendDataUrl(){
   return './epic7_hero_record_output/hero_full_legend.json';
 }
+function clampRelationValue(value, minValue, maxValue){
+  return Math.max(minValue, Math.min(maxValue, Number(value || 0)));
+}
 function normalizeCompiledPatternHeroKey(rawName){
   if(!rawName) return null;
-  const hero = ensureHeroExists(rawName, {context:'compiled-pattern'});
-  return hero ? normalizeHeroId(hero.id || rawName) : null;
+  const heroId = normalizeHeroId(rawName);
+  if(HERO_BY_ID[heroId]) return heroId;
+  const raw = String(rawName || '').trim();
+  const found = HEROES.find(hero => hero.name === raw);
+  return found ? found.id : null;
 }
-function getActivePatternStats(){
-  return compiledPatternState.compiled || null;
+function compileDirectedRelationMatrix(source){
+  const matrix = new Map();
+  for(const [heroKey, row] of Object.entries(source || {})){
+    const heroId = normalizeCompiledPatternHeroKey(heroKey);
+    if(!heroId || !row || typeof row !== 'object') continue;
+    const inner = new Map();
+    for(const [targetKey, entry] of Object.entries(row || {})){
+      const targetId = normalizeCompiledPatternHeroKey(targetKey);
+      if(!targetId || !entry || typeof entry !== 'object') continue;
+      inner.set(targetId, {
+        score:Number(entry.score || 0),
+        rawScore:Number(entry.rawScore || 0),
+        confidence:Number(entry.confidence || 0),
+        sample:Number(entry.sample || 0),
+        cap:Number(entry.cap || 0),
+        sources:entry.sources || {}
+      });
+    }
+    matrix.set(heroId, inner);
+  }
+  return matrix;
 }
-function buildBattlePairKey(a, b){
-  return [normalizeHeroId(a), normalizeHeroId(b)].filter(Boolean).sort().join('|');
-}
-function buildBattlePackageKey(members){
-  return [...new Set((members || []).map(normalizeHeroId).filter(Boolean))].sort().join('|');
-}
-function compileHeroPatternMap(source){
+function compileRoleSectionMap(source){
   const map = new Map();
-  for(const [name, stat] of Object.entries(source || {})){
-    const heroId = normalizeCompiledPatternHeroKey(name);
-    if(!heroId) continue;
-    map.set(heroId, {...(stat || {}), heroId, heroName:getHeroDisplayName(heroId)});
+  for(const [heroKey, entry] of Object.entries(source || {})){
+    const heroId = normalizeCompiledPatternHeroKey(heroKey);
+    if(!heroId || !entry || typeof entry !== 'object') continue;
+    map.set(heroId, {
+      rate:Number(entry.rate || entry.presenceRate || 0),
+      rawScore:Number(entry.rawScore || 0),
+      score:Number(entry.score || 0),
+      confidence:Number(entry.confidence || 0),
+      sample:Number(entry.sample || 0),
+      cap:Number(entry.cap || 0),
+      presenceRate:Number(entry.presenceRate || entry.rate || 0),
+      relationCapScale:Number(entry.relationCapScale || 0),
+      confidenceCapScale:Number(entry.confidenceCapScale || 0),
+      earlyStageGate:Number(entry.earlyStageGate || 0),
+      lateStageRelief:Number(entry.lateStageRelief || 0),
+      suppressed:Boolean(entry.suppressed)
+    });
   }
   return map;
 }
-function compilePairPatternMap(source){
-  const map = new Map();
-  for(const [key, stat] of Object.entries(source || {})){
-    const parts = String(key || '').split('|').map(normalizeCompiledPatternHeroKey).filter(Boolean);
-    if(parts.length !== 2) continue;
-    const pairKey = buildBattlePairKey(parts[0], parts[1]);
-    map.set(pairKey, {...(stat || {}), members:parts});
-  }
-  return map;
-}
-function compilePackagePatternMap(source){
-  const map = new Map();
-  for(const [key, stat] of Object.entries(source || {})){
-    const parts = String(key || '').split('|').map(normalizeCompiledPatternHeroKey).filter(Boolean);
-    if(parts.length < 3) continue;
-    const packageKey = buildBattlePackageKey(parts);
-    map.set(packageKey, {...(stat || {}), members:[...new Set(parts)].sort()});
-  }
-  return map;
-}
-function compileWeakMatchupPatternMap(source){
-  const map = new Map();
-  for(const [key, stat] of Object.entries(source || {})){
-    const [hero, opp] = String(key || '').split('|');
-    const heroId = normalizeCompiledPatternHeroKey(hero);
-    const oppId = normalizeCompiledPatternHeroKey(opp);
-    if(!heroId || !oppId) continue;
-    map.set(`${heroId}|${oppId}`, {...(stat || {}), heroId, oppId});
-  }
-  return map;
-}
-function compileHeroSetPatternMap(source){
-  const map = new Map();
-  for(const [name, setMap] of Object.entries(source || {})){
-    const heroId = normalizeCompiledPatternHeroKey(name);
-    if(!heroId) continue;
-    map.set(heroId, setMap || {});
-  }
-  return map;
+function createEmptyRoleScoreBundle(){
+  return {
+    firstpick:new Map(),
+    vanguard:new Map(),
+    preban:new Map(),
+    banPressure:new Map(),
+    presence:new Map(),
+    protection:new Map()
+  };
 }
 function preprocessCompiledPatternData(raw){
-  if(!raw || typeof raw !== 'object' || !raw.heroPresenceStats) throw new Error('compiled_pattern_data.json ??? ????.');
+  if(!raw || typeof raw !== 'object') throw new Error('compiled relation data ??? ???? ????.');
+  const matchupMatrix = compileDirectedRelationMatrix(raw.matchupMatrix || raw.counterMatrix || raw.matrix);
+  const synergyMatrix = compileDirectedRelationMatrix(raw.synergyMatrix || raw.synergy || raw.matrix);
+  const roleRoot = raw.roleScores || raw;
+  const roleScores = createEmptyRoleScoreBundle();
+  roleScores.firstpick = compileRoleSectionMap(roleRoot.firstpick);
+  roleScores.vanguard = compileRoleSectionMap(roleRoot.vanguard);
+  roleScores.preban = compileRoleSectionMap(roleRoot.preban);
+  roleScores.banPressure = compileRoleSectionMap(roleRoot.banPressure);
+  roleScores.presence = compileRoleSectionMap(roleRoot.presence);
+  roleScores.protection = compileRoleSectionMap(roleRoot.protection);
+  let matchupRelationCount = 0;
+  for(const row of matchupMatrix.values()) matchupRelationCount += row.size;
+  let synergyRelationCount = 0;
+  for(const row of synergyMatrix.values()) synergyRelationCount += row.size;
   return {
-    version: raw.version || 1,
-    source: raw.source || {},
-    normalization: raw.normalization || {},
-    heroPresenceStats: compileHeroPatternMap(raw.heroPresenceStats),
-    heroWinStats: compileHeroPatternMap(raw.heroWinStats),
-    heroPrebanStats: compileHeroPatternMap(raw.heroPrebanStats),
-    heroFirstPickStats: compileHeroPatternMap(raw.heroFirstPickStats),
-    heroVanguardStats: compileHeroPatternMap(raw.heroVanguardStats),
-    heroBanPressureStats: compileHeroPatternMap(raw.heroBanPressureStats),
-    heroPairStats: compilePairPatternMap(raw.heroPairStats),
-    heroPackageStats: compilePackagePatternMap(raw.heroPackageStats),
-    heroSetStats: compileHeroSetPatternMap(raw.heroSetStats),
-    weakMatchupHintStats: compileWeakMatchupPatternMap(raw.weakMatchupHintStats)
+    version:Number(raw.version || 1),
+    source:raw.source || {},
+    roleScores,
+    matchupMatrix,
+    synergyMatrix,
+    matchupRelationCount,
+    synergyRelationCount,
+    heroIds:[...new Set([...HEROES.map(hero => hero.id), ...matchupMatrix.keys(), ...synergyMatrix.keys()])]
   };
 }
-function getCompiledPatternPairRecommendationBonus(aId, bId, myPicks, compiled){
-  if(!compiled) return {bonus:0, pairLift:0, packageLift:0, pairGames:0, packageGames:0};
-  const pairStat = compiled.heroPairStats.get(buildBattlePairKey(aId, bId));
-  const pairLift = Math.max(-0.55, Math.min(0.75, Number(pairStat?.lift || 0) * 0.12));
-  let packageLift = 0;
+function getCompiledRelationEntry(matrix, heroId, otherId){
+  const row = matrix?.get(normalizeHeroId(heroId));
+  return row ? (row.get(normalizeHeroId(otherId)) || null) : null;
+}
+function getCompiledRoleScore(section, heroId, compiled = compiledPatternState.compiled){
+  return compiled?.roleScores?.[section]?.get(normalizeHeroId(heroId)) || null;
+}
+function getRelationPresenceRate(compiled, heroId){
+  return Number(getCompiledRoleScore('presence', heroId, compiled)?.rate || 0);
+}
+function getBoardWideRelationSummary(candidateId, myPicks, oppPicks, compiled){
+  if(!compiled) return {synergy:0, pack:0, completion:0, counters:0, confidenceMean:0, sampleTotal:0, heroSample:0, allySample:0, enemySample:0, contextualReliability:0};
+  const heroId = normalizeHeroId(candidateId);
+  const allyLinks = [];
+  let allyForwardTotal = 0;
+  let allyReverseTotal = 0;
+  let allyConfidenceSum = 0;
+  let allyConfidenceCount = 0;
+  let allySample = 0;
+  for(const allyId of myPicks || []){
+    const forward = getCompiledRelationEntry(compiled.synergyMatrix, heroId, allyId);
+    const reverse = getCompiledRelationEntry(compiled.synergyMatrix, allyId, heroId);
+    const direct = Number(forward?.score || 0);
+    const reciprocal = Number(reverse?.score || 0);
+    const combined = direct + reciprocal * 0.82;
+    if(combined > 0){
+      allyLinks.push(combined);
+      allyForwardTotal += direct;
+      allyReverseTotal += reciprocal;
+    }
+    const confidenceValues = [Number(forward?.confidence || 0), Number(reverse?.confidence || 0)].filter(value => value > 0);
+    if(confidenceValues.length){
+      allyConfidenceSum += confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length;
+      allyConfidenceCount += 1;
+    }
+    allySample += Math.max(Number(forward?.sample || 0), Number(reverse?.sample || 0));
+  }
+  allyLinks.sort((a, b) => b - a);
+  const bestAlly = allyLinks[0] || 0;
+  const secondAlly = allyLinks[1] || 0;
+  let counterOffense = 0;
+  let counterThreat = 0;
+  let enemyConfidenceSum = 0;
+  let enemyConfidenceCount = 0;
+  let enemySample = 0;
+  for(const oppId of oppPicks || []){
+    const offense = getCompiledRelationEntry(compiled.matchupMatrix, heroId, oppId);
+    const danger = getCompiledRelationEntry(compiled.matchupMatrix, oppId, heroId);
+    counterOffense += Number(offense?.score || 0);
+    counterThreat += Number(danger?.score || 0);
+    const confidenceValues = [Number(offense?.confidence || 0), Number(danger?.confidence || 0)].filter(value => value > 0);
+    if(confidenceValues.length){
+      enemyConfidenceSum += confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length;
+      enemyConfidenceCount += 1;
+    }
+    enemySample += Math.max(Number(offense?.sample || 0), Number(danger?.sample || 0));
+  }
+  const confidenceValues = [];
+  if(allyConfidenceCount) confidenceValues.push(allyConfidenceSum / allyConfidenceCount);
+  if(enemyConfidenceCount) confidenceValues.push(enemyConfidenceSum / enemyConfidenceCount);
+  const confidenceMean = confidenceValues.length
+    ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length
+    : 0;
+  const presenceRate = getRelationPresenceRate(compiled, heroId);
+  const synergy = clampRelationValue((allyForwardTotal + allyReverseTotal * 0.84) * 3.4, 0, 6.4);
+  const pack = clampRelationValue((allyReverseTotal * 2.7) + Math.max(0, bestAlly - 0.18) * 1.25, 0, 4.8);
+  const completion = clampRelationValue((bestAlly + secondAlly) * 1.95, 0, 4.2);
+  const counters = clampRelationValue(counterOffense * 3.9 - counterThreat * 2.8, -3.8, 6.4);
+  const contextualReliability = clampRelationValue((confidenceMean - 0.34) * 0.30 + Math.min(0.08, presenceRate * 0.24), -0.12, 0.22);
+  return {
+    synergy,
+    pack,
+    completion,
+    counters,
+    confidenceMean,
+    sampleTotal:allySample + enemySample,
+    heroSample:Number(getCompiledRoleScore('presence', heroId, compiled)?.sample || 0),
+    allySample,
+    enemySample,
+    contextualReliability,
+    bestAlly,
+    secondAlly
+  };
+}
+function getLowPickRelationProtection(hero, stage, relationSummary, compiled){
+  const protection = getCompiledRoleScore('protection', hero.id, compiled) || {};
+  const presenceRate = getRelationPresenceRate(compiled, hero.id);
+  const nextPickNumber = stage?.type === 'pick' && stage?.side === 'me' ? (myBoardAfterCurrent().length + 1) : 0;
+  const confidenceGate = clampRelationValue((Number(relationSummary?.confidenceMean || 0) - 0.22) / 0.56, 0, 1);
+  const relationCap = Number(protection.relationCapScale || 1.28) + confidenceGate * Number(protection.confidenceCapScale || 0.72);
+  const earlyStage = nextPickNumber > 0 && nextPickNumber <= 3;
+  const earlyStageGate = earlyStage
+    ? Number(protection.earlyStageGate || 0.72) * (0.78 + confidenceGate * 0.22)
+    : 1;
+  const metaSnapshot = getLegendMetaSnapshot(hero);
+  const lowMetaPenalty = earlyStage && metaSnapshot.metaRaw < 7.4 && presenceRate < 0.026 && confidenceGate < 0.55 ? 0.84 : 1;
+  return {
+    relationCap,
+    earlyStageGate,
+    lateStageRelief:Number(protection.lateStageRelief || 1),
+    confidenceGate,
+    presenceRate,
+    suppressed:Boolean(protection.suppressed || earlyStageGate < 0.9 || lowMetaPenalty < 1),
+    lowMetaPenalty
+  };
+}
+function getCompiledPatternPairRecommendationBonus(aId, bId, myPicks, oppPicks, compiled){
+  if(!compiled) return {bonus:0, mutualSynergy:0, boardFit:0, counterCoverage:0, vanguardBoost:0, pairGames:0, packageGames:0};
+  const forward = getCompiledRelationEntry(compiled.synergyMatrix, aId, bId);
+  const reverse = getCompiledRelationEntry(compiled.synergyMatrix, bId, aId);
+  const mutualSynergy = clampRelationValue((Number(forward?.score || 0) + Number(reverse?.score || 0)) * 2.4, -0.6, 1.8);
+  let boardFit = 0;
+  let counterCoverage = 0;
+  let pairGames = Math.max(Number(forward?.sample || 0), Number(reverse?.sample || 0));
   let packageGames = 0;
   for(const allyId of myPicks || []){
-    const packageStat = compiled.heroPackageStats.get(buildBattlePackageKey([allyId, aId, bId]));
-    if(!packageStat) continue;
-    packageLift += Number(packageStat.lift || 0) * 0.12;
-    packageGames += Number(packageStat.games || 0);
+    const aForward = getCompiledRelationEntry(compiled.synergyMatrix, aId, allyId);
+    const aReverse = getCompiledRelationEntry(compiled.synergyMatrix, allyId, aId);
+    const bForward = getCompiledRelationEntry(compiled.synergyMatrix, bId, allyId);
+    const bReverse = getCompiledRelationEntry(compiled.synergyMatrix, allyId, bId);
+    boardFit += (Number(aForward?.score || 0) + Number(aReverse?.score || 0) + Number(bForward?.score || 0) + Number(bReverse?.score || 0)) * 1.1;
+    packageGames += Math.max(Number(aForward?.sample || 0), Number(aReverse?.sample || 0), Number(bForward?.sample || 0), Number(bReverse?.sample || 0));
   }
-  packageLift = Math.max(-0.42, Math.min(0.62, packageLift));
-  return {
-    bonus: Math.max(-0.7, Math.min(1.1, pairLift + packageLift)),
-    pairLift,
-    packageLift,
-    pairGames: Number(pairStat?.games || 0),
-    packageGames
-  };
+  for(const oppId of oppPicks || []){
+    const aCounter = getCompiledRelationEntry(compiled.matchupMatrix, aId, oppId);
+    const bCounter = getCompiledRelationEntry(compiled.matchupMatrix, bId, oppId);
+    const oppVsA = getCompiledRelationEntry(compiled.matchupMatrix, oppId, aId);
+    const oppVsB = getCompiledRelationEntry(compiled.matchupMatrix, oppId, bId);
+    counterCoverage += (Number(aCounter?.score || 0) + Number(bCounter?.score || 0)) * 1.3;
+    counterCoverage -= (Number(oppVsA?.score || 0) + Number(oppVsB?.score || 0)) * 0.92;
+  }
+  const vanguardBoost = myPicks.length === 1
+    ? clampRelationValue(Math.max(Number(getCompiledRoleScore('vanguard', aId, compiled)?.score || 0), Number(getCompiledRoleScore('vanguard', bId, compiled)?.score || 0)) * 2.8, 0, 1.1)
+    : 0;
+  const bonus = clampRelationValue(mutualSynergy + boardFit * 0.85 + counterCoverage * 0.72 + vanguardBoost, -1.2, 3.8);
+  return {bonus, mutualSynergy, boardFit, counterCoverage, vanguardBoost, pairGames, packageGames};
 }
 function getCompiledPatternAdjustment(candidateId, myPicks, oppPicks, stage, compiled){
-  if(!compiled) return {contextualReliability:0, preban:0, early:0, vanguard:0, exposure:0, decoy:0, pair:0, package:0, counter:0, total:0, games:{hero:0, pair:0, package:0, counter:0}};
+  if(!compiled) return {contextualReliability:0, preban:0, early:0, vanguard:0, exposure:0, decoy:0, synergy:0, package:0, completion:0, counter:0, total:0, games:{hero:0, pair:0, package:0, counter:0}, confidenceMean:0, lowPickGuard:{relationCap:0, earlyStageGate:1, lowMetaPenalty:1}};
   const heroId = normalizeHeroId(candidateId);
-  const presenceStat = compiled.heroPresenceStats.get(heroId) || {};
-  const winStat = compiled.heroWinStats.get(heroId) || {};
-  const prebanStat = compiled.heroPrebanStats.get(heroId) || {};
-  const firstPickStat = compiled.heroFirstPickStats.get(heroId) || {};
-  const vanguardStat = compiled.heroVanguardStats.get(heroId) || {};
-  const banPressureStat = compiled.heroBanPressureStats.get(heroId) || {};
+  const relationSummary = getBoardWideRelationSummary(heroId, myPicks, oppPicks, compiled);
+  const prebanStat = getCompiledRoleScore('preban', heroId, compiled) || {};
+  const firstpickStat = getCompiledRoleScore('firstpick', heroId, compiled) || {};
+  const vanguardStat = getCompiledRoleScore('vanguard', heroId, compiled) || {};
+  const banPressureStat = getCompiledRoleScore('banPressure', heroId, compiled) || {};
   const nextPickNumber = (myPicks || []).length + 1;
+  const lowPickGuard = getLowPickRelationProtection(HERO_BY_ID[heroId], stage, relationSummary, compiled);
 
-  const contextualReliability = Math.max(-0.08, Math.min(0.12,
-    Math.min(0.06, Number(presenceStat.presenceRate || 0) * 3.2) +
-    Math.max(-0.08, Math.min(0.08, Number(winStat.reliabilityScore || 0) * 0.32))
-  ));
+  let synergy = relationSummary.synergy;
+  let packageBonus = relationSummary.pack;
+  let completion = relationSummary.completion;
+  let counter = relationSummary.counters;
+  let early = stage?.type === 'pick' && stage?.side === 'me' && nextPickNumber <= 2
+    ? clampRelationValue(Number(firstpickStat.score || 0) * (nextPickNumber === 1 ? 5.2 : 4.0), 0, 2.2)
+    : 0;
+  let vanguard = stage?.type === 'pick' && stage?.side === 'me' && nextPickNumber === 3
+    ? clampRelationValue(Number(vanguardStat.score || 0) * 5.2, 0, 2.8)
+    : 0;
   const preban = stage?.type === 'pick' && stage?.side === 'me'
-    ? Math.max(0, Math.min(0.24, Number(prebanStat.pressureScore || 0) * 0.82))
+    ? clampRelationValue(Number(prebanStat.score || 0) * 2.6, 0, 1.4)
     : 0;
-  const early = stage?.type === 'pick' && stage?.side === 'me' && nextPickNumber <= 2
-    ? Math.max(0, Math.min(0.26, Number(firstPickStat.openerScore || 0) * 1.08))
-    : 0;
-  const vanguard = stage?.type === 'pick' && stage?.side === 'me' && nextPickNumber === 3
-    ? Math.max(0, Math.min(0.24, Number(vanguardStat.protectedCoreScore || 0) * 0.94))
-    : 0;
-  const exposure = Math.max(-0.30, Math.min(0, -Number(banPressureStat.banPressureScore || 0) * 0.62));
+  const exposure = clampRelationValue(-Number(banPressureStat.score || 0) * 1.8, -1.6, 0);
   const decoy = Number((HERO_BY_ID[heroId]?.ban || 0)) >= 18
-    ? Math.max(0, Math.min(0.10, Number(banPressureStat.banPressureScore || 0) * 0.16))
+    ? clampRelationValue(Number(banPressureStat.score || 0) * 0.52, 0, 0.55)
     : 0;
 
-  let pair = 0;
-  let pairGames = 0;
-  for(const allyId of myPicks || []){
-    const pairStat = compiled.heroPairStats.get(buildBattlePairKey(heroId, allyId));
-    if(!pairStat) continue;
-    pair += Number(pairStat.lift || 0) * 0.10;
-    pairGames += Number(pairStat.games || 0);
-  }
-  pair = Math.max(-0.52, Math.min(0.68, pair));
+  const positiveRelationTotal = Math.max(0, synergy) + Math.max(0, packageBonus) + Math.max(0, completion) + Math.max(0, counter) + Math.max(0, early) + Math.max(0, vanguard);
+  const relationScale = positiveRelationTotal > lowPickGuard.relationCap && positiveRelationTotal > 0
+    ? lowPickGuard.relationCap / positiveRelationTotal
+    : 1;
+  const earlyScale = lowPickGuard.earlyStageGate * lowPickGuard.lowMetaPenalty;
+  const positiveScale = relationScale * earlyScale;
+  synergy = synergy > 0 ? synergy * positiveScale : synergy;
+  packageBonus = packageBonus > 0 ? packageBonus * positiveScale : packageBonus;
+  completion = completion > 0 ? completion * positiveScale : completion;
+  counter = counter > 0 ? counter * positiveScale : counter;
+  early = early > 0 ? early * positiveScale : early;
+  vanguard = vanguard > 0 ? vanguard * positiveScale : vanguard;
 
-  let packageBonus = 0;
-  let packageGames = 0;
-  for(let i=0;i<(myPicks || []).length;i++){
-    for(let j=i+1;j<(myPicks || []).length;j++){
-      const packageStat = compiled.heroPackageStats.get(buildBattlePackageKey([heroId, myPicks[i], myPicks[j]]));
-      if(!packageStat) continue;
-      packageBonus += Number(packageStat.lift || 0) * 0.10;
-      packageGames += Number(packageStat.games || 0);
-    }
-  }
-  packageBonus = Math.max(-0.44, Math.min(0.62, packageBonus));
-
-  let counter = 0;
-  let counterGames = 0;
-  for(const oppId of oppPicks || []){
-    const weakStat = compiled.weakMatchupHintStats.get(`${heroId}|${oppId}`);
-    if(weakStat){
-      counter -= Math.min(0.18, Number(weakStat.hintScore || 0)) * 2.5;
-      counterGames += Number(weakStat.games || 0);
-    }
-    const reverseStat = compiled.weakMatchupHintStats.get(`${oppId}|${heroId}`);
-    if(reverseStat){
-      counter += Math.min(0.16, Number(reverseStat.hintScore || 0)) * 1.15;
-    }
-  }
-  counter = Math.max(-0.48, Math.min(0.28, counter));
-
-  const total = Math.max(-1.18, Math.min(1.48, contextualReliability + preban + early + vanguard + exposure + decoy + pair + packageBonus + counter));
+  const total = clampRelationValue(relationSummary.contextualReliability + preban + early + vanguard + exposure + decoy + synergy + packageBonus + completion + counter, -4.4, 11.4);
   return {
-    contextualReliability,
+    contextualReliability:relationSummary.contextualReliability,
     preban,
     early,
     vanguard,
     exposure,
     decoy,
-    pair,
+    synergy,
     package:packageBonus,
+    completion,
     counter,
     total,
+    confidenceMean:relationSummary.confidenceMean,
+    lowPickGuard,
     games:{
-      hero:Number(winStat.games || presenceStat.total || 0),
-      pair:pairGames,
-      package:packageGames,
-      counter:counterGames
+      hero:relationSummary.heroSample,
+      pair:relationSummary.allySample,
+      package:relationSummary.sampleTotal,
+      counter:relationSummary.enemySample
     }
   };
 }
-function applyCompiledPatternData(raw, sourceLabel='embedded compiled_patterns'){
+function applyCompiledPatternData(raw, sourceLabel='embedded compiled relation stub'){
   compiledPatternState.raw = raw;
   compiledPatternState.compiled = preprocessCompiledPatternData(raw);
   compiledPatternState.ready = true;
   compiledPatternState.sourceLabel = sourceLabel;
   compiledPatternState.lastError = '';
-  compiledPatternState.loadedEntries = compiledPatternState.compiled.heroPresenceStats.size;
+  compiledPatternState.loadedEntries = compiledPatternState.compiled.heroIds.length;
   invalidateBattlecollectCache();
   updateBattlecollectInfo();
   render('board');
 }
-async function loadCompiledPatternData(forceReload=false, file=null){
+async function fetchJsonWithCache(url, forceReload=false){
+  const response = await fetch(url, { cache: forceReload ? 'reload' : 'default' });
+  if(!response.ok) throw new Error(`${url} HTTP ${response.status}`);
+  return response.json();
+}
+async function fetchCompiledRelationBundle(forceReload=false){
+  const [matchup, synergy, role] = await Promise.all([
+    fetchJsonWithCache(getCompiledMatchupMatrixUrl(), forceReload),
+    fetchJsonWithCache(getCompiledSynergyMatrixUrl(), forceReload),
+    fetchJsonWithCache(getCompiledRoleScoresUrl(), forceReload)
+  ]);
+  return {
+    version:3,
+    source:{ mode:'local-compiled-files', matchup:getCompiledMatchupMatrixUrl(), synergy:getCompiledSynergyMatrixUrl(), role:getCompiledRoleScoresUrl() },
+    matchupMatrix:matchup.counterMatrix || matchup.matchupMatrix || matchup.matrix || {},
+    synergyMatrix:synergy.synergyMatrix || synergy.matrix || {},
+    roleScores:role || {},
+    buildSummary:{ localFiles:true }
+  };
+}
+async function buildCompiledRelationBundleFromFiles(files){
+  const parsed = { matchupMatrix:null, synergyMatrix:null, roleScores:null };
+  for(const file of files || []){
+    const raw = JSON.parse(await file.text());
+    const name = String(file.name || '').toLowerCase();
+    if(name.includes('matchup') || raw.counterMatrix || raw.matchupMatrix){
+      parsed.matchupMatrix = raw.counterMatrix || raw.matchupMatrix || raw.matrix || {};
+      continue;
+    }
+    if(name.includes('synergy') || raw.synergyMatrix){
+      parsed.synergyMatrix = raw.synergyMatrix || raw.matrix || {};
+      continue;
+    }
+    if(name.includes('role') || raw.firstpick || raw.vanguard || raw.preban || raw.banPressure){
+      parsed.roleScores = raw;
+    }
+  }
+  if(!parsed.matchupMatrix || !parsed.synergyMatrix) throw new Error('compiled matchup/synergy matrix ??? ?? ?????.');
+  return {
+    version:3,
+    source:{ mode:'manual-local-override' },
+    matchupMatrix:parsed.matchupMatrix,
+    synergyMatrix:parsed.synergyMatrix,
+    roleScores:parsed.roleScores || {},
+    buildSummary:{ manualOverride:true }
+  };
+}
+async function loadCompiledPatternData(forceReload=false, files=null){
+  const selectedFiles = files ? Array.from(files) : [];
   try{
-    const raw = file ? JSON.parse(await file.text()) : EMBEDDED_COMPILED_PATTERN_DATA;
-    const sourceLabel = file?.name || 'embedded compiled_patterns';
+    const raw = selectedFiles.length
+      ? await buildCompiledRelationBundleFromFiles(selectedFiles)
+      : await fetchCompiledRelationBundle(forceReload);
+    const sourceLabel = selectedFiles.length
+      ? selectedFiles.map(file => file.name).join(', ')
+      : 'local compiled relation bundle';
     applyCompiledPatternData(raw, sourceLabel);
-    if(file) appendRuntimeLog(`compiled pattern 로드: ${sourceLabel}`);
+    if(selectedFiles.length) appendRuntimeLog(`compiled relation ??: ${sourceLabel}`);
+    return true;
   }catch(err){
+    if(!selectedFiles.length){
+      applyCompiledPatternData(EMBEDDED_COMPILED_PATTERN_DATA, 'embedded compiled relation stub');
+      compiledPatternState.lastError = `compiled relation ?? ??: ${String(err?.message || err || '? ? ?? ??')}`;
+      updateBattlecollectInfo('local matrix fetch ??');
+      appendRuntimeLog(compiledPatternState.lastError);
+      return false;
+    }
     compiledPatternState.ready = false;
     compiledPatternState.compiled = null;
-    compiledPatternState.lastError = `compiled_patterns 로드 실패: ${String(err?.message || err || '알 수 없는 오류')}`;
+    compiledPatternState.lastError = `compiled relation ?? ??: ${String(err?.message || err || '? ? ?? ??')}`;
     updateBattlecollectInfo();
+    return false;
   }
 }
 function appendRuntimeLog(message){
@@ -8370,63 +8531,36 @@ function scoreHero(candidateId, myPicks, oppPicks, stage, ctx){
   if(context.lockedIds.has(candidateId) || context.pickedNames.has(heroName)) return null;
 
   const reliability = heroReliabilityMultiplier(c);
-  const synergyLinks = getHeroSynIds(c).filter(id => context.myPickSet.has(id)).length;
-  const packageLinks = PACKAGES.reduce((sum, p) => sum + (p.members.includes(c.id) ? p.members.filter(id => id!==c.id && context.myPickSet.has(id)).length : 0), 0);
-  const openedPackageCount = PACKAGES.filter(p => p.members.includes(c.id) && p.members.some(id => id!==c.id && context.myPickSet.has(id))).length;
-  const repeatAxisPenalty = Math.min(4.2, Math.max(0, synergyLinks - 1) * 1.1 + Math.max(0, packageLinks - 1) * 0.9 + Math.max(0, openedPackageCount - 1) * 0.7);
-
+  const repeatAxisPenalty = Math.min(2.8, Math.max(0, context.myPicks.length - 1) * 0.42);
   const metaBase = getBaselineMetaScore(c, reliability);
-  const synergyRaw = synergyBonus(c, context.myPicks);
-  const packRaw = packageBonus(c.id, context.myPicks, context.oppPicks);
-  const completionRaw = completionPressureBonus(c, context.myPicks);
-
-  const synergyDiminish = 1 / (1 + Math.max(0, synergyLinks - 1) * 0.4);
-  const packDiminish = 1 / (1 + Math.max(0, packageLinks - 1) * 0.35 + Math.max(0, openedPackageCount - 1) * 0.25);
-  const synergyStageWeights = context.synergyStageWeights;
-  const meta = metaBase.score;
-  const synergyBase = synergyRaw * 0.18 * synergyDiminish * synergyStageWeights.synergy;
-  const packBase = packRaw * 0.21 * packDiminish * synergyStageWeights.pack;
-  const completionBase = Math.min(5.2, completionRaw * 0.52 * synergyStageWeights.completion) * (1 / (1 + Math.max(0, packageLinks - 1) * 0.3));
-
   const patternParts = getCompiledPatternAdjustment(c.id, context.myPicks, context.oppPicks, stage, context.patternStats);
   const counterProfile = counterBonus(c, context.oppPicks);
   const openCounterBase = projectedOpenCounterPenalty(c, context.myPicks, context.oppPicks, stage);
-  const counterReliability = positiveCounterReliabilityMultiplier(openCounterBase, counterProfile);
-  const adjustedCounterScore = counterProfile.positive * counterReliability - counterProfile.negative;
-  const counters = adjustedCounterScore * 0.85 + patternParts.counter;
   const auxiliaryGate = lowPickAuxiliaryGate(c);
-  const earlyRaw = (earlyPickValue(c, context.myPicks, context.oppPicks) * 0.78 * reliability + patternParts.early) * auxiliaryGate;
-  const urgencyRaw = ((c.ban * 0.05 + commonThreatWeight(c) + logBanPressureBonus(c, context.myPicks, context.oppPicks, stage)) * reliability + patternParts.preban) * auxiliaryGate;
-  const exposure = -finalBanExposurePenalty(c, context.myPicks) + patternParts.exposure;
-  const reliefRaw = (decoyRelief(c) + patternParts.decoy) * auxiliaryGate;
-  const auxiliaryParts = applyAuxiliaryBonusCap(c, meta, {early:earlyRaw, urgency:urgencyRaw, relief:reliefRaw});
-  const vanguardBase = context.myPicks.length===2 ? vanguardProtectedValue(c, context.myPicks) * 0.392 : 0;
-  const roleLogBase = turnScopedLogWinBonus(c, context.myPicks, stage) * reliability;
+  const meta = metaBase.score;
   const relationBucket = applyDirectionalEvidenceBucket([
-    {key:'synergy', value:synergyBase},
-    {key:'pack', value:packBase},
-    {key:'completion', value:completionBase},
-    {key:'vanguardBase', value:vanguardBase},
-    {key:'patternPackage', value:patternParts.package},
-    {key:'patternPair', value:patternParts.pair},
-    {key:'patternVanguard', value:patternParts.vanguard},
-    {key:'roleLog', value:roleLogBase}
+    {key:'matrixSynergy', value:patternParts.synergy},
+    {key:'matrixPack', value:patternParts.package},
+    {key:'matrixCompletion', value:patternParts.completion},
+    {key:'matrixVanguard', value:patternParts.vanguard}
   ], HERO_SHARED_SIGNAL_BUCKET_OPTIONS);
+  const counters = patternParts.counter;
+  const earlyRaw = patternParts.early * auxiliaryGate;
+  const urgencyRaw = ((c.ban * 0.05 + commonThreatWeight(c)) * reliability + patternParts.preban) * auxiliaryGate;
+  const exposure = -finalBanExposurePenalty(c, context.myPicks) + patternParts.exposure;
+  const reliefRaw = (decoyRelief(c) + patternParts.decoy) * auxiliaryGate * (patternParts.lowPickGuard?.lateStageRelief || 1);
+  const auxiliaryParts = applyAuxiliaryBonusCap(c, meta, {early:earlyRaw, urgency:urgencyRaw, relief:reliefRaw});
   const speedContestSource = speedContestSkirmisherBonus(c, context.myPicks, context.oppPicks) * reliability;
   const firstTurnPenaltySource = vanguardFirstTurnPenalty(c, context.myPicks, context.oppPicks);
-  const roleLogBucket = relationBucket.values.roleLog || 0;
-  const patternPair = relationBucket.values.patternPair || 0;
-  const patternPackage = relationBucket.values.patternPackage || 0;
-  const patternVanguard = relationBucket.values.patternVanguard || 0;
-  const packPenalty = repeatAxisPenalty * 0.58;
-  const completionPenalty = repeatAxisPenalty * 0.42;
-  const synergy = (relationBucket.values.synergy || 0) + patternPair;
-  const pack = (relationBucket.values.pack || 0) + patternPackage - packPenalty;
-  const completion = (relationBucket.values.completion || 0) - completionPenalty;
-  const early = (auxiliaryParts.values.early || 0) + (context.myPicks.length===2 ? 0 : roleLogBucket);
+  const synergy = relationBucket.values.matrixSynergy || 0;
+  const packPenalty = repeatAxisPenalty * 0.24;
+  const completionPenalty = repeatAxisPenalty * 0.18;
+  const pack = (relationBucket.values.matrixPack || 0) - packPenalty;
+  const completion = (relationBucket.values.matrixCompletion || 0) - completionPenalty;
+  const early = auxiliaryParts.values.early || 0;
   const urgency = auxiliaryParts.values.urgency || 0;
   const relief = auxiliaryParts.values.relief || 0;
-  const vanguard = (relationBucket.values.vanguardBase || 0) + patternVanguard + (context.myPicks.length===2 ? roleLogBucket : 0);
+  const vanguard = relationBucket.values.matrixVanguard || 0;
   const archetype = turnOneArchetypeBonus(c, context.myPicks, context.oppPicks, stage) * reliability + speedContestSource;
   const reproducibility = -turnOneReplicabilityPenalty(c, context.myPicks, context.oppPicks, stage) + (patternParts.contextualReliability || 0) + firstTurnPenaltySource;
   const openCounter = -dampenOpenCounterPenalty(openCounterBase, counterProfile, c);
@@ -8442,16 +8576,19 @@ function scoreHero(candidateId, myPicks, oppPicks, stage, ctx){
         patternTotal:patternParts.total,
         patternPreban:patternParts.preban,
         patternEarly:patternParts.early,
-        patternVanguard,
+        patternVanguard:patternParts.vanguard,
         patternExposure:patternParts.exposure,
         patternDecoy:patternParts.decoy,
-        patternPair,
-        patternPackage,
+        patternPair:0,
+        patternPackage:patternParts.package,
         patternCounter:patternParts.counter,
+        patternSynergy:patternParts.synergy,
+        patternCompletion:patternParts.completion,
+        patternConfidence:patternParts.confidenceMean || 0,
         contextualReliability:patternParts.contextualReliability || 0,
         speedContest:speedContestSource,
         firstTurnPenalty:firstTurnPenaltySource,
-        roleLog:roleLogBucket,
+        roleLog:0,
         repeatAxisPenalty,
         packPenalty,
         completionPenalty,
@@ -8463,24 +8600,18 @@ function scoreHero(candidateId, myPicks, oppPicks, stage, ctx){
         relationBucketPositive:relationBucket.positiveTotal,
         counterPositive:counterProfile.positive,
         counterNegative:counterProfile.negative,
-        counterReliability,
-        openCounterBase
+        counterReliability:1,
+        openCounterBase,
+        lowPickSuppressed:patternParts.lowPickGuard?.suppressed || false,
+        lowPickRelationCap:patternParts.lowPickGuard?.relationCap || 0
       }
     },
     reasons:buildReasons(c, context.myPicks, context.oppPicks, early, vanguard, archetype, reproducibility, openCounter, reliability, speedContestSource)
   };
 }
-function getAvailableHeroesForStage(stage, selectionCtx){
-  const ctx = selectionCtx || buildSelectionContext(stage);
-  return HEROES.filter(h => {
-    if(ALIAS_HERO_IDS.has(h.id)) return false;
-    if(!h) return false;
-    return canSelectWithContext(h.id, stage, ctx);
-  });
-}
 function computeRecommendations(){
   const stage = nextMyPickStage();
-  if(!stage) return {stage:null, pickLabel:'\ucd94\ucc9c \uc885\ub8cc', remainingSlots:0, singles:[], pairs:[]};
+  if(!stage) return {stage:null, pickLabel:'?? ??', remainingSlots:0, singles:[], pairs:[]};
 
   const myPicks = myBoardAfterCurrent();
   const oppPicks = oppBoardAfterCurrent();
@@ -8506,22 +8637,13 @@ function computeRecommendations(){
         const sb = pairPool[j];
         const a = sa.hero;
         const b = sb.hero;
-        const directSynergyBonus = (getHeroSynIds(a).includes(b.id) ? 6 : 0) + (getHeroSynIds(b).includes(a.id) ? 6 : 0);
-        let packagePairBonus = 0;
-        for(const p of PACKAGES){
-          if(p.members.includes(a.id) && p.members.includes(b.id)) packagePairBonus += p.weight * 0.4;
-        }
-        const completionA = completionPressureBonus(a, [...myPicks, b.id]) * 0.22;
-        const completionB = completionPressureBonus(b, [...myPicks, a.id]) * 0.22;
-        const logPairBonus = HIGHROLLER_TURN_ONE.observedPairs.some(pair => pair.includes(a.id) && pair.includes(b.id)) ? (state.side==='first' ? 3.2 : 1.2) : 0;
-        const vanguardPairBonus = myPicks.length===1 ? Math.max(vanguardProtectedValue(a, myPicks), vanguardProtectedValue(b, myPicks)) * 0.45 : 0;
-        const compiledPairBonus = getCompiledPatternPairRecommendationBonus(a.id, b.id, myPicks, compiledPatternState.compiled);
+        const compiledPairBonus = getCompiledPatternPairRecommendationBonus(a.id, b.id, myPicks, oppPicks, compiledPatternState.compiled);
         const pairBucket = applyDirectionalEvidenceBucket([
-          {key:'directSynergyBonus', value:directSynergyBonus},
-          {key:'packagePairBonus', value:packagePairBonus},
-          {key:'completionPairBonus', value:completionA + completionB},
-          {key:'logPairBonus', value:logPairBonus},
-          {key:'vanguardPairBonus', value:vanguardPairBonus},
+          {key:'directSynergyBonus', value:compiledPairBonus.mutualSynergy},
+          {key:'packagePairBonus', value:compiledPairBonus.boardFit},
+          {key:'completionPairBonus', value:compiledPairBonus.counterCoverage},
+          {key:'logPairBonus', value:0},
+          {key:'vanguardPairBonus', value:compiledPairBonus.vanguardBoost},
           {key:'patternPairBonus', value:compiledPairBonus.bonus}
         ], PAIR_SHARED_SIGNAL_BUCKET_OPTIONS);
         const pairBonus = pairBucket.total;
@@ -8533,12 +8655,12 @@ function computeRecommendations(){
           directSynergyBonus: pairBucket.values.directSynergyBonus || 0,
           packagePairBonus: pairBucket.values.packagePairBonus || 0,
           completionPairBonus: pairBucket.values.completionPairBonus || 0,
-          logPairBonus: pairBucket.values.logPairBonus || 0,
+          logPairBonus: 0,
           vanguardPairBonus: pairBucket.values.vanguardPairBonus || 0,
           patternPairBonus: pairBucket.values.patternPairBonus || 0,
           patternPairGames:compiledPairBonus.pairGames,
           patternPackageGames:compiledPairBonus.packageGames,
-          reasons: buildPairReasonChips(a, b, myPicks, { completionA, completionB, logPairBonus, vanguardPairBonus, patternPairBonus:compiledPairBonus.bonus, patternPackageGames:compiledPairBonus.packageGames })
+          reasons: buildPairReasonChips(a, b, myPicks, { completionA: compiledPairBonus.counterCoverage, completionB: 0, logPairBonus: 0, vanguardPairBonus: compiledPairBonus.vanguardBoost, patternPairBonus: compiledPairBonus.bonus, patternPackageGames: compiledPairBonus.packageGames })
         });
       }
     }
@@ -8653,19 +8775,19 @@ function clearHeroLegendData(){
   render({mode:'board', heroGrid:true, heroLegendInfo:true});
 }
 function clearBattlecollectData(){
-  applyCompiledPatternData(EMBEDDED_COMPILED_PATTERN_DATA, 'embedded compiled_patterns');
   const input = document.getElementById('battlecollectFilesInput');
   if(input) input.value='';
-  appendRuntimeLog('compiled_patterns baseline 복원');
+  loadCompiledPatternData(true).catch(() => applyCompiledPatternData(EMBEDDED_COMPILED_PATTERN_DATA, 'embedded compiled relation stub'));
+  appendRuntimeLog('?? compiled relation baseline ??');
 }
 async function handleBattlecollectFiles(fileList){
   const files = Array.from(fileList || []).filter(file => /\.json$/i.test(file.name));
   if(!files.length){
-    compiledPatternState.lastError = '선택한 compiled_pattern_data JSON 파일이 없습니다.';
+    compiledPatternState.lastError = '??? compiled relation JSON ??? ????.';
     updateBattlecollectInfo();
     return;
   }
-  await loadCompiledPatternData(true, files[0]);
+  await loadCompiledPatternData(true, files);
 }
 function updateHeroGridAvailability(force=false){
   const grid = document.getElementById('heroGrid');
@@ -8861,7 +8983,7 @@ const wsResetBtn = document.getElementById('wsResetBtn'); if(wsResetBtn) wsReset
 captureAllHeroManualLegendBases();
 
 render();
-applyCompiledPatternData(EMBEDDED_COMPILED_PATTERN_DATA, 'embedded compiled_patterns');
+loadCompiledPatternData().catch(() => applyCompiledPatternData(EMBEDDED_COMPILED_PATTERN_DATA, 'embedded compiled relation stub'));
 connectWebSocket();
 </script>
 </body>

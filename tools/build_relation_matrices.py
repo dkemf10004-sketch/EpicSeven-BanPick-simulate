@@ -13,6 +13,7 @@ PATTERNS_PATH = DATA_DIR / 'compiled_patterns.json'
 MATCHUP_OUT = DATA_DIR / 'compiled_matchup_matrix.json'
 SYNERGY_OUT = DATA_DIR / 'compiled_synergy_matrix.json'
 ROLE_OUT = DATA_DIR / 'compiled_role_scores.json'
+OVERLAY_OUT = DATA_DIR / 'compiled_runtime_overlay.json'
 
 
 def read_json(path: Path):
@@ -35,6 +36,115 @@ def sample_confidence(sample: float, pivot: float) -> float:
 
 def round4(value: float) -> float:
     return round(float(value), 4)
+
+
+def resolve_overlay_relation_id(raw_id: str, hero_by_id: dict, alias_map: dict, name_to_id: dict) -> tuple[str | None, bool]:
+    if raw_id in hero_by_id:
+        return raw_id, False
+    alias_target = alias_map.get(raw_id)
+    if alias_target and alias_target in hero_by_id:
+        return alias_target, False
+    if raw_id.startswith('EXT_'):
+        human_name = raw_id[4:].replace('_', ' ').strip()
+        if human_name in name_to_id:
+            return name_to_id[human_name], False
+    if raw_id in name_to_id:
+        return name_to_id[raw_id], False
+    return raw_id, True
+
+
+def build_overlay_relation_list(row: dict, hero_id: str, hero_by_id: dict, alias_map: dict, name_to_id: dict, top_n: int = 8, confidence_floor: float = 0.26) -> tuple[list[dict], int]:
+    selected = []
+    unresolved = 0
+    for target_id, entry in (row or {}).items():
+        resolved_id, unresolved_flag = resolve_overlay_relation_id(target_id, hero_by_id, alias_map, name_to_id)
+        if not resolved_id or resolved_id == hero_id:
+            continue
+        score = float(entry.get('score') or 0.0)
+        confidence = float(entry.get('confidence') or 0.0)
+        if score <= 0 or confidence < confidence_floor:
+            continue
+        selected.append({
+            'id': resolved_id,
+            'score': round4(score),
+            'confidence': round4(confidence),
+            '_unresolved': unresolved_flag,
+        })
+    selected.sort(key=lambda item: (-item['score'], -item['confidence'], item['id']))
+    trimmed = []
+    seen = set()
+    for item in selected:
+        if item['id'] in seen:
+            continue
+        seen.add(item['id'])
+        if item.pop('_unresolved', False):
+            unresolved += 1
+        trimmed.append(item)
+        if len(trimmed) >= top_n:
+            break
+    return trimmed, unresolved
+
+
+def build_runtime_overlay(compiled_heroes: dict, counter_matrix: dict, synergy_matrix: dict, role_scores: dict) -> dict:
+    heroes = compiled_heroes['heroes']
+    hero_by_id = {hero['id']: hero for hero in heroes}
+    alias_map = compiled_heroes.get('aliases', {}) or {}
+    name_to_id = {hero['name']: hero['id'] for hero in heroes}
+    counter_rows = counter_matrix.get('counterMatrix', {}) or {}
+    synergy_rows = synergy_matrix.get('synergyMatrix', {}) or {}
+    overlay_heroes = {}
+    unresolved_ids = []
+    total_synergies = 0
+    total_counters = 0
+
+    for hero in heroes:
+        hero_id = hero['id']
+        synergy_list, synergy_unresolved = build_overlay_relation_list(synergy_rows.get(hero_id, {}), hero_id, hero_by_id, alias_map, name_to_id)
+        counter_list, counter_unresolved = build_overlay_relation_list(counter_rows.get(hero_id, {}), hero_id, hero_by_id, alias_map, name_to_id)
+        if synergy_unresolved:
+            unresolved_ids.extend([f'{hero_id}:synergy'] * synergy_unresolved)
+        if counter_unresolved:
+            unresolved_ids.extend([f'{hero_id}:counter'] * counter_unresolved)
+        total_synergies += len(synergy_list)
+        total_counters += len(counter_list)
+        overlay_heroes[hero_id] = {
+            'topSynergies': synergy_list,
+            'topCounters': counter_list,
+            'roles': {
+                'firstpick': round4(float((role_scores.get('firstpick', {}) or {}).get(hero_id, {}).get('score') or 0.0)),
+                'vanguard': round4(float((role_scores.get('vanguard', {}) or {}).get(hero_id, {}).get('score') or 0.0)),
+                'preban': round4(float((role_scores.get('preban', {}) or {}).get(hero_id, {}).get('score') or 0.0)),
+                'banPressure': round4(float((role_scores.get('banPressure', {}) or {}).get(hero_id, {}).get('score') or 0.0)),
+                'presence': round4(float((role_scores.get('presence', {}) or {}).get(hero_id, {}).get('score') or 0.0)),
+            },
+            'protection': {
+                'relationCapScale': round4(float((role_scores.get('protection', {}) or {}).get(hero_id, {}).get('relationCapScale') or 0.0)),
+                'confidenceCapScale': round4(float((role_scores.get('protection', {}) or {}).get(hero_id, {}).get('confidenceCapScale') or 0.0)),
+                'earlyStageGate': round4(float((role_scores.get('protection', {}) or {}).get(hero_id, {}).get('earlyStageGate') or 0.0)),
+                'lateStageRelief': round4(float((role_scores.get('protection', {}) or {}).get(hero_id, {}).get('lateStageRelief') or 0.0)),
+                'suppressed': bool((role_scores.get('protection', {}) or {}).get(hero_id, {}).get('suppressed')),
+            }
+        }
+
+    return {
+        'heroes': overlay_heroes,
+        'meta': {
+            'heroCount': len(heroes),
+            'sourceVersion': f"overlay-v1/matrix-{counter_matrix.get('version', 1)}-{synergy_matrix.get('version', 1)}-role-{role_scores.get('version', 1)}",
+            'buildSummary': {
+                'topRelationLimit': 8,
+                'confidenceFloor': 0.26,
+                'avgTopSynergies': round4(total_synergies / max(1, len(heroes))),
+                'avgTopCounters': round4(total_counters / max(1, len(heroes))),
+                'unresolvedIds': unresolved_ids,
+                'unresolvedCount': len(unresolved_ids),
+                'sourceHeroCount': len(heroes),
+                'counterNonzero': int(counter_matrix.get('buildSummary', {}).get('nonzeroRelations', 0)),
+                'synergyNonzero': int(synergy_matrix.get('buildSummary', {}).get('nonzeroRelations', 0)),
+                'lowPickSuppressedHeroes': int(role_scores.get('buildSummary', {}).get('lowPickSuppressedHeroes', 0)),
+            }
+        }
+    }
 
 
 def zero_relation() -> dict:
@@ -385,9 +495,12 @@ def main() -> None:
         'lowPickSuppressedHeroes': low_pick_suppressed,
     }
 
+    runtime_overlay = build_runtime_overlay(compiled_heroes, counter_matrix, synergy_matrix, role_scores)
+
     write_json(MATCHUP_OUT, counter_matrix)
     write_json(SYNERGY_OUT, synergy_matrix)
     write_json(ROLE_OUT, role_scores)
+    write_json(OVERLAY_OUT, runtime_overlay)
 
     summary = {
         'baseline_hero_count': hero_count,
@@ -397,10 +510,14 @@ def main() -> None:
         'synergy_nonzero_relations': synergy_nonzero,
         'confidence_weakened_relations': confidence_weakened,
         'low_pick_suppressed_heroes': low_pick_suppressed,
+        'overlay_avg_top_synergies': runtime_overlay['meta']['buildSummary']['avgTopSynergies'],
+        'overlay_avg_top_counters': runtime_overlay['meta']['buildSummary']['avgTopCounters'],
+        'overlay_unresolved_ids': runtime_overlay['meta']['buildSummary']['unresolvedCount'],
         'outputs': [
             str(MATCHUP_OUT.relative_to(ROOT)).replace('\\', '/'),
             str(SYNERGY_OUT.relative_to(ROOT)).replace('\\', '/'),
             str(ROLE_OUT.relative_to(ROOT)).replace('\\', '/'),
+            str(OVERLAY_OUT.relative_to(ROOT)).replace('\\', '/'),
         ],
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))

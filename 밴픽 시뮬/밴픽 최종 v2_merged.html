@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -6357,8 +6357,13 @@ const compiledPatternState = {
   lastError:'',
   loadedEntries:0
 };
+const runtimeOverlayState = {
+  ready:false,
+  data:null,
+  lastError:''
+};
 const EMBEDDED_COMPILED_PATTERN_DATA = {
-  version: 3,
+  "version": 2,
   source: { mode: 'minimal-relation-stub' },
   matchupMatrix: {},
   synergyMatrix: {},
@@ -7910,19 +7915,29 @@ function updateBattlecollectInfo(extraText=''){
   if(!el) return;
   if(compiledPatternState.ready && compiledPatternState.compiled){
     const compiled = compiledPatternState.compiled;
-    const heroCount = compiled.heroIds?.length || HEROES.length;
-    const counterCount = Number(compiled.matchupRelationCount || 0);
-    const synergyCount = Number(compiled.synergyRelationCount || 0);
-    const base = compiledPatternState.raw?.buildSummary?.embeddedStub
-      ? '?? relation stub ?? ? ?? compiled matrix override ??'
-      : `relation matrix hero ${heroCount} ? counter ${counterCount} ? synergy ${synergyCount}`;
+    const heroCount =
+      compiled.heroPresenceStats instanceof Map
+        ? compiled.heroPresenceStats.size
+        : Object.keys(compiled.heroPresenceStats || {}).length;
+    const pairCount =
+      compiled.heroPairStats instanceof Map
+        ? compiled.heroPairStats.size
+        : Object.keys(compiled.heroPairStats || {}).length;
+    const packageCount =
+      compiled.heroPackageStats instanceof Map
+        ? compiled.heroPackageStats.size
+        : Object.keys(compiled.heroPackageStats || {}).length;
+    const base = `compiled pattern hero ${heroCount} ? pair ${pairCount} ? package ${packageCount}`;
     el.textContent = extraText ? `${base} ? ${extraText}` : base;
     return;
   }
-  el.textContent = compiledPatternState.lastError || '?? compiled relation matrix ?? ??';
+  el.textContent = compiledPatternState.lastError || '?? pattern stub ?? ? ?? ? compiled_patterns.json ?? override';
 }
 function getCompiledMatchupMatrixUrl(){
   return './compiled_matchup_matrix.json';
+}
+function getCompiledRuntimeOverlayUrl(){
+  return './compiled_runtime_overlay.json';
 }
 function getCompiledSynergyMatrixUrl(){
   return './compiled_synergy_matrix.json';
@@ -7996,6 +8011,107 @@ function createEmptyRoleScoreBundle(){
     banPressure:new Map(),
     presence:new Map(),
     protection:new Map()
+  };
+}
+function normalizeOverlayRelationList(source){
+  return (Array.isArray(source) ? source : [])
+    .map(entry => {
+      const heroId = normalizeCompiledPatternHeroKey(entry?.id);
+      return heroId ? {
+        id:heroId,
+        score:Number(entry?.score || 0),
+        confidence:Number(entry?.confidence || 0)
+      } : null;
+    })
+    .filter(entry => entry && entry.score > 0 && entry.confidence > 0)
+    .sort((a,b)=>b.score-a.score || b.confidence-a.confidence || a.id.localeCompare(b.id))
+    .slice(0,8);
+}
+function preprocessRuntimeOverlayData(raw){
+  if(!raw || typeof raw !== 'object' || !raw.heroes || typeof raw.heroes !== 'object'){
+    throw new Error('compiled runtime overlay data 형식이 올바르지 않습니다.');
+  }
+  const heroes = {};
+  for(const [heroKey, entry] of Object.entries(raw.heroes || {})){
+    const heroId = normalizeCompiledPatternHeroKey(heroKey);
+    if(!heroId || !entry || typeof entry !== 'object') continue;
+    heroes[heroId] = {
+      topSynergies:normalizeOverlayRelationList(entry.topSynergies),
+      topCounters:normalizeOverlayRelationList(entry.topCounters),
+      roles:{
+        firstpick:Number(entry.roles?.firstpick || 0),
+        vanguard:Number(entry.roles?.vanguard || 0),
+        preban:Number(entry.roles?.preban || 0),
+        banPressure:Number(entry.roles?.banPressure || 0),
+        presence:Number(entry.roles?.presence || 0)
+      },
+      protection:{
+        relationCapScale:Number(entry.protection?.relationCapScale || 0),
+        confidenceCapScale:Number(entry.protection?.confidenceCapScale || 0),
+        earlyStageGate:Number(entry.protection?.earlyStageGate || 0),
+        lateStageRelief:Number(entry.protection?.lateStageRelief || 0),
+        suppressed:Boolean(entry.protection?.suppressed)
+      }
+    };
+  }
+  return {
+    heroes,
+    meta:raw.meta || {}
+  };
+}
+function applyRuntimeOverlayData(raw){
+  runtimeOverlayState.data = preprocessRuntimeOverlayData(raw);
+  runtimeOverlayState.ready = true;
+  runtimeOverlayState.lastError = '';
+  return runtimeOverlayState.data;
+}
+async function fetchRuntimeOverlayData(forceReload=false){
+  return fetchJsonWithCache(getCompiledRuntimeOverlayUrl(), forceReload);
+}
+async function findRuntimeOverlayInFiles(files){
+  for(const file of files || []){
+    const name = String(file.name || '').toLowerCase();
+    if(!name.includes('runtime_overlay') && !name.includes('overlay')) continue;
+    const raw = JSON.parse(await file.text());
+    if(raw && typeof raw === 'object' && raw.heroes && raw.meta) return raw;
+  }
+  return null;
+}
+async function loadRuntimeOverlayData(forceReload=false, files=null){
+  const selectedFiles = files ? Array.from(files) : [];
+  try{
+    const raw = selectedFiles.length
+      ? await findRuntimeOverlayInFiles(selectedFiles)
+      : await fetchRuntimeOverlayData(forceReload);
+    if(!raw) return false;
+    applyRuntimeOverlayData(raw);
+    return true;
+  }catch(err){
+    runtimeOverlayState.ready = false;
+    runtimeOverlayState.data = null;
+    runtimeOverlayState.lastError = `compiled runtime overlay 로드 실패: ${String(err?.message || err || '알 수 없는 오류')}`;
+    return false;
+  }
+}
+function getOverlayHeroEntry(heroId){
+  return runtimeOverlayState.data?.heroes?.[normalizeHeroId(heroId)] || null;
+}
+function getOverlayTopSynergies(heroId){
+  return getOverlayHeroEntry(heroId)?.topSynergies || [];
+}
+function getOverlayTopCounters(heroId){
+  return getOverlayHeroEntry(heroId)?.topCounters || [];
+}
+function getOverlayRoleScore(heroId, roleKey){
+  return Number(getOverlayHeroEntry(heroId)?.roles?.[roleKey] || 0);
+}
+function getOverlayProtection(heroId){
+  return getOverlayHeroEntry(heroId)?.protection || {
+    relationCapScale:0,
+    confidenceCapScale:0,
+    earlyStageGate:0,
+    lateStageRelief:0,
+    suppressed:false
   };
 }
 function preprocessCompiledPatternData(raw){
@@ -8287,6 +8403,7 @@ async function buildCompiledRelationBundleFromFiles(files){
 }
 async function loadCompiledPatternData(forceReload=false, files=null){
   const selectedFiles = files ? Array.from(files) : [];
+  await loadRuntimeOverlayData(forceReload, selectedFiles);
   try{
     const raw = selectedFiles.length
       ? await buildCompiledRelationBundleFromFiles(selectedFiles)
@@ -8487,6 +8604,13 @@ function canSelectWithContext(heroId, stage, ctx){
     return ctx.pickedIds.has(heroId) && ctx.picks.me.includes(heroId) && heroId !== ctx.myVanguard && !ctx.oppFinalBan.has(heroId);
   }
   return false;
+}
+function getAvailableHeroesForStage(stage, selectionCtx){
+  const ctx = selectionCtx || buildSelectionContext(stage);
+  return HEROES.filter(hero => canSelectWithContext(hero.id, stage, ctx));
+}
+function getActivePatternStats(){
+  return compiledPatternState.compiled || null;
 }
 function createRecommendationContext(stage, myPicks, oppPicks){
   const prebanIds = new Set(actualPrebans().map(normalizeHeroId));
@@ -8783,7 +8907,6 @@ function clearBattlecollectData(){
 async function handleBattlecollectFiles(fileList){
   const files = Array.from(fileList || []).filter(file => /\.json$/i.test(file.name));
   if(!files.length){
-    compiledPatternState.lastError = '??? compiled relation JSON ??? ????.';
     updateBattlecollectInfo();
     return;
   }

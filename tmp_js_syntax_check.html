@@ -8503,6 +8503,9 @@ function getAvailableHeroesForStage(stage, selectionCtx){
   const ctx = selectionCtx || buildSelectionContext(stage);
   return HEROES.filter(hero => canSelectWithContext(hero.id, stage, ctx));
 }
+function getActivePatternStats(){
+  return compiledPatternState.compiled || null;
+}
 function createRecommendationContext(stage, myPicks, oppPicks){
   const prebanIds = new Set(actualPrebans().map(normalizeHeroId));
   const pickedIds = new Set([...myPicks, ...oppPicks].map(normalizeHeroId).filter(Boolean));

@@ -1,0 +1,23 @@
+{
+  "set_max_hp": "체력",
+  "set_def": "방어",
+  "set_att": "공격",
+  "set_cri": "치명",
+  "set_acc": "적중",
+  "set_speed": "속도",
+  "set_vampire": "흡혈",
+  "set_res": "저항",
+  "set_immune": "면역",
+  "set_cri_dmg": "파멸",
+  "set_counter": "반격",
+  "set_coop": "협공",
+  "set_penetrate": "관통",
+  "set_shield": "수호",
+  "set_rage": "분노",
+  "set_scar": "상처",
+  "set_revenge": "복수",
+  "set_torrent": "격류",
+  "set_opener": "개전",
+  "set_chase": "추격",
+  "set_revenant": "역습"
+}

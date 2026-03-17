@@ -95,8 +95,7 @@
     .recSetRow{display:flex;flex-wrap:wrap;gap:6px}
     .recSetBadge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:34px;padding:3px;border-radius:999px;border:1px solid #334155;background:#0f172a;position:relative;overflow:hidden}
     .recSetBadge img{width:26px;height:26px;object-fit:contain;display:block}
-    .setIcons{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:4px}
-    .setIcon{width:18px;height:18px;object-fit:contain;border-radius:4px;display:block}
+    .recSetFallback{display:none;align-items:center;justify-content:center;min-width:26px;min-height:26px;padding:0 6px;font-size:10px;border-radius:999px;color:#cbd5e1;background:#0f172a;border:1px solid #334155}
     .recHead{display:flex;justify-content:space-between;gap:8px;align-items:center}
     .score{font-size:22px;font-weight:800;color:#bfdbfe}
     .bars{display:grid;gap:4px}
@@ -664,26 +663,19 @@ function renderRecommendationSetIcons(values){
     return `<span class="recSetBadge" title="${name}"><img src="${imagePath}" alt="${name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex';"><span class="recSetFallback">${name}</span></span>`;
   }).join('')}</div>`;
 }
-function normalizeRenderedSetName(value){
-  const v = String(value || '').trim();
-  if(v === '파괴') return '파멸';
-  if(v === '보호') return '수호';
-  return v;
-}
-function getSetIconPath(setName){
-  const name = normalizeRenderedSetName(setName);
-  return `./set_images/${encodeURIComponent(name)}.png`;
-}
-function renderSetIcons(sets, limit=2){
-  const list = Array.isArray(sets)
-    ? sets.map(normalizeRenderedSetName).filter(Boolean).slice(0, limit)
-    : [];
-  if(!list.length) return '';
-  return `<div class="setIcons">${list.map(name =>
-    `<img class="setIcon" src="${getSetIconPath(name)}" alt="${name}" title="${name}" onerror="this.style.display='none';" />`
-  ).join('')}</div>`;
-}
-function getHeroFallbackData(heroValue){
+function renderSetIcons(values, limit=2){
+  const codes = normalizeHeroSetList(values).slice(0, limit);
+  if(!codes.length) return '';
+  return `<div class="recSetRow">${codes.map(code => {
+    const name = setCodeToKorean(code);
+    const imagePath = setToImagePath(code);
+    return `<span class="recSetBadge" title="${name}">
+      <img src="${imagePath}" alt="${name}" loading="lazy"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex';">
+      <span class="recSetFallback">${name}</span>
+    </span>`;
+  }).join('')}</div>`;
+}function getHeroFallbackData(heroValue){
   const cacheKey = String(heroValue || '').trim();
   if(cacheKey && heroLegendState.fallbackDataCache.has(cacheKey)) return heroLegendState.fallbackDataCache.get(cacheKey);
   const resolved = resolveHeroEntry(heroValue);

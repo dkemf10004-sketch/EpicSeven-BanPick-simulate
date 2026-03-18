@@ -6250,6 +6250,36 @@ const HEROES = [
   }
 ];
 
+const HERO_TAG_ALIASES = {
+  '선턴잡이': 'first_turn',
+  '속기각': 'speed_contest',
+  '밴가드': 'vanguard',
+  '하르세티 리스크': 'harseti_risk',
+  'first_turn': 'first_turn',
+  'speed_contest': 'speed_contest',
+  'vanguard': 'vanguard',
+  'harseti_risk': 'harseti_risk'
+};
+
+function normalizeHeroTags(tags){
+  return [...new Set((Array.isArray(tags) ? tags : [])
+    .map(tag => HERO_TAG_ALIASES[String(tag || '').trim()] || String(tag || '').trim())
+    .filter(Boolean))];
+}
+
+function heroHasTag(hero, tag){
+  if(!hero) return false;
+  if(!hero.__normalizedTags){
+    hero.__normalizedTags = normalizeHeroTags(hero.tags);
+  }
+  return hero.__normalizedTags.includes(tag);
+}
+
+for(const hero of HEROES){
+  hero.tags = normalizeHeroTags(hero.tags);
+  hero.__normalizedTags = hero.tags.slice();
+}
+
 const HERO_BY_ID = Object.fromEntries(HEROES.map(h => [h.id, h]));
 const HERO_ID_ALIASES = {'SCENT_POLITIS':'GHOST_POLITIS', 'ELENA_STAR':'STAR_ELENA', 'PUNISH_ARIA':'PUNISH_PUNISH_ARIA', 'ARIA':'PUNISH_PUNISH_ARIA', '기라스':'ORIGIN_RAS', '창브':'SKY_ILLYNAV', '보세리아':'ISEPUNISH_ARIA', '방화영':'HWAYOUNG', '해군대령 랑디':'NAVY_LANDY', '별의 엘레나':'STAR_ELENA', '잿빛숲의 이세리아':'ASHEN_ISERIA', '하르테시':'HARSETI', '집행관 빌트레드':'VILDRED', '월광 아라민타':'SILVER_ARAMINTA', '바다의 향기 폴리티스':'SCENT_POLITIS', '디자이너 디리벳':'DESIGNER_LILIBET'};
 const ALIAS_HERO_IDS = new Set(Object.keys(HERO_ID_ALIASES));
@@ -6642,7 +6672,7 @@ function buildSynergyPanelCandidate(baseHero, candidateHero){
     score += 7.5;
     reasons.push('\ud6c4\ubcf4\uac00 \uae30\uc900 \uc601\uc6c5\uacfc \uc9c1\uc811 \uc5f0\uacc4');
   }
-  for(const p of PACKAGES){
+  for(const p of MANUAL_ANCHOR_PACKAGES){
     if(p.members.includes(baseHero.id) && p.members.includes(candidateHero.id)){
       score += Math.min(5.2, p.weight * 0.22);
       reasons.push('\uac19\uc740 \uc870\ud569 \ucd95 \uc5f0\uacb0');
@@ -6662,7 +6692,7 @@ function buildPairReasonChips(a, b, myPicks, detail = {}){
   const reasons = [];
   if(getHeroSynIds(a).includes(b.id)) reasons.push(`${a.name}\u2192${b.name} \uc9c1\uc811 \uc5f0\uacc4`);
   if(getHeroSynIds(b).includes(a.id)) reasons.push(`${b.name}\u2192${a.name} \uc9c1\uc811 \uc5f0\uacc4`);
-  const packageHit = PACKAGES.find(p => p.members.includes(a.id) && p.members.includes(b.id));
+  const packageHit = MANUAL_ANCHOR_PACKAGES.find(p => p.members.includes(a.id) && p.members.includes(b.id));
   if(packageHit) reasons.push(`\uac19\uc740 \uc870\ud569 \ucd95 ${packageHit.name}`);
   if((detail.completionA || 0) > 0 || (detail.completionB || 0) > 0) reasons.push('\uc870\ud569 \uc644\uc131 \uc555\ubc15');
   if((detail.logPairBonus || 0) > 0) reasons.push('\ub85c\uadf8 \ud398\uc5b4');
@@ -6674,9 +6704,9 @@ function buildFinalBanReasonChips(hero, myPicks, oppPicks, baseReasons = []){
   const chips = [...baseReasons];
   const directThreats = myPicks.filter(id => getHeroHardIds(hero).includes(id)).slice(0,2).map(getHeroDisplayName);
   if(directThreats.length) chips.push(`\ub0b4 \uc870\ud569 \uc555\ubc15 ${directThreats.join(', ')}`);
-  const specialThreats = myPicks.filter(myId => NUANCED_COUNTERS.some(rel => rel.counter === hero.id && rel.target === myId)).slice(0,2).map(getHeroDisplayName);
+  const specialThreats = myPicks.filter(myId => MANUAL_ANCHOR_COUNTERS.some(rel => rel.counter === hero.id && rel.target === myId)).slice(0,2).map(getHeroDisplayName);
   if(specialThreats.length) chips.push(`\ud2b9\uc218 \uce74\uc6b4\ud130 ${specialThreats.join(', ')}`);
-  const packageHit = PACKAGES.find(p => p.members.includes(hero.id) && p.members.some(id => id !== hero.id && oppPicks.includes(id)));
+  const packageHit = MANUAL_ANCHOR_PACKAGES.find(p => p.members.includes(hero.id) && p.members.some(id => id !== hero.id && oppPicks.includes(id)));
   if(packageHit) chips.push(`\uc0c1\ub300 \uc870\ud569 \ucd95 ${packageHit.name}`);
   const synergyHits = getHeroSynIds(hero).filter(id => oppPicks.includes(id) && id !== hero.id).slice(0,2).map(getHeroDisplayName);
   if(synergyHits.length) chips.push(`\uc0c1\ub300 \uc5f0\uacc4 ${synergyHits.join(', ')}`);
@@ -6728,7 +6758,8 @@ function applyLegendMetricsToHero(hero, entry){
 }
 
 
-const NUANCED_COUNTERS = [
+// RAW_NUANCED_COUNTERS는 archive source이며 직접 scoring 본체로 쓰지 않음.
+const RAW_NUANCED_COUNTERS = [
   {counter:'ASHEN_ISERIA', target:'MAID_CHLOE', weight:4.6, note:'메이드 클로에 복구 축 견제'},
   {counter:'ASHEN_ISERIA', target:'RUEL', weight:4.2, note:'빛의 루엘 보호 축 견제'},
   {counter:'ASHEN_ISERIA', target:'YULHA', weight:4.8, note:'최신 로그 기준 율하 축 반복 견제'},
@@ -6797,6 +6828,7 @@ const RAW_PACKAGES = [
   {name:'기라스-보세리아-빛의 루엘-세크레트', members:['ORIGIN_RAS','ISEPUNISH_ARIA','RUEL','SECRET'], weight:10},
   {name:'사령관 파벨-잿숲-프리렌', members:['COMMANDER_PAVEL','ASHEN_ISERIA','FRIEREN'], weight:9}
 ];
+// RAW_PACKAGES는 archive source이며 직접 scoring 본체로 쓰지 않음
 const CLEAN_PACKAGES = (() => {
   const seen = new Map();
   for(const pkg of RAW_PACKAGES){
@@ -6811,7 +6843,36 @@ const CLEAN_PACKAGES = (() => {
   }
   return [...seen.values()];
 })();
-const PACKAGES = CLEAN_PACKAGES;
+// MANUAL_ANCHOR_COUNTERS = 수동 특수 카운터 예외 규칙, overlay를 보조하는 용도
+const MANUAL_ANCHOR_COUNTERS = (() => {
+  const dedup = new Map();
+  for(const rel of RAW_NUANCED_COUNTERS){
+    const key = `${normalizeHeroId(rel.counter)}->${normalizeHeroId(rel.target)}`;
+    const next = {
+      ...rel,
+      counter: normalizeHeroId(rel.counter),
+      target: normalizeHeroId(rel.target),
+      weight: Number(rel.weight || 0)
+    };
+    const prev = dedup.get(key);
+    if(!prev || next.weight > prev.weight) dedup.set(key, next);
+  }
+  return [...dedup.values()]
+    .filter(rel => HERO_BY_ID[rel.counter] && HERO_BY_ID[rel.target])
+    .filter(rel => rel.weight >= 4.2)
+    .sort((a,b) => b.weight - a.weight)
+    .slice(0, 24);
+})();
+// MANUAL_ANCHOR_PACKAGES = 수동 대표 패키지 앵커, overlay/top synergy를 보조하는 용도
+const MANUAL_ANCHOR_PACKAGES = (() => {
+  const base = CLEAN_PACKAGES
+    .map(p => ({...p, weight:Number(p.weight || 0)}))
+    .filter(p => p.members.every(id => HERO_BY_ID[id]))
+    .filter(p => p.weight >= 14)
+    .sort((a,b) => b.weight - a.weight)
+    .slice(0, 12);
+  return base;
+})();
 const COMMON_PREBAN = ['LIBRA_MASTER','HARSETI','YULHA','BELIAN','GIO','MORT','SECRET'];
 const EARLY_PICK_CORE = ['ORIGIN_RAS','DARK_DIEANE','FRIEREN','ISEPUNISH_ARIA','LIBRA_MASTER','RUEL','SECRET'];
 const LOG_ROLE_CONFIDENCE_STATS = {
@@ -7004,10 +7065,10 @@ function vanguardProtectedValue(hero, myPicks){
   let score = 0;
   const synHits = getHeroSynIds(hero).filter(id => myPicks.includes(id)).length;
   score += synHits * 4.2;
-  for(const p of PACKAGES){
+  for(const p of MANUAL_ANCHOR_PACKAGES){
     if(!p.members.includes(hero.id)) continue;
     const linked = p.members.filter(id => id !== hero.id && myPicks.includes(id)).length;
-    if(linked >= 1) score += Math.min(6.5, p.weight * 0.35);
+    if(linked >= 1) score += Math.min(4.2, p.weight * 0.21);
   }
   score += Math.min(2.4, hero.ban * 0.05);
   return score;
@@ -7161,15 +7222,15 @@ function packageBonus(candidateId, myPicks, oppPicks = []){
   candidateId = normalizeHeroId(candidateId);
   const candidate = HERO_BY_ID[candidateId];
   const axisBonuses = new Map();
-  for(const p of PACKAGES){
+  for(const p of MANUAL_ANCHOR_PACKAGES){
     if(!p.members.includes(candidateId)) continue;
     const alliedMembers = p.members.filter(id => id !== candidateId && myPicks.includes(id));
     const count = alliedMembers.length;
     if(count <= 0) continue;
     const axisKey = [candidateId, ...alliedMembers].sort().join('|');
     let bonus = 0;
-    if(count === 1) bonus = p.weight * 0.38;
-    if(count >= 2) bonus = p.weight * Math.min(0.72, 0.52 + count * 0.08);
+    if(count === 1) bonus = p.weight * 0.22;
+    if(count >= 2) bonus = p.weight * Math.min(0.44, 0.30 + count * 0.05);
     const prev = axisBonuses.get(axisKey) || 0;
     if(bonus > prev) axisBonuses.set(axisKey, bonus);
   }
@@ -7186,7 +7247,7 @@ function packageBonus(candidateId, myPicks, oppPicks = []){
     for(const oid of oppPicks){
       const opp = HERO_BY_ID[oid];
       if((opp?.hard||[]).includes(candidateId)) counterHits++;
-      for(const rel of NUANCED_COUNTERS){
+      for(const rel of MANUAL_ANCHOR_COUNTERS){
         if(rel.counter === oid && rel.target === candidateId) counterHits++;
       }
     }
@@ -7217,13 +7278,13 @@ function counterBonus(candidate, oppPicks){
       negative += 6.2 * (1 - metaStability * 0.18);
       directNegativeHits += 1;
     }
-    for(const rel of NUANCED_COUNTERS){
+    for(const rel of MANUAL_ANCHOR_COUNTERS){
       if(rel.counter === candidate.id && rel.target === oid){
-        positive += rel.weight * 0.84;
+        positive += rel.weight * 0.59;
         nuancedPositiveHits += 1;
       }
       if(rel.counter === oid && rel.target === candidate.id){
-        negative += rel.weight * (0.86 - metaStability * 0.08);
+        negative += rel.weight * (0.602 - metaStability * 0.056);
         nuancedNegativeHits += 1;
       }
     }
@@ -7253,8 +7314,8 @@ function finalBanExposurePenalty(candidate, myPicks){
   const projected = [...myPicks, candidate.id];
   const highBan = projected.map(id => HERO_BY_ID[id]).filter(Boolean).sort((a,b)=>b.ban-a.ban);
   if(!highBan.length) return 0;
-  if(highBan[0].id === candidate.id) return Math.min(candidate.ban * 0.18, 7.5);
-  return candidate.ban * 0.08;
+  if(highBan[0].id === candidate.id) return Math.min(candidate.ban * 0.13, 5.8);
+  return candidate.ban * 0.05;
 }
 
 function decoyRelief(candidate){
@@ -7316,13 +7377,12 @@ function openCounterResilience(hero){
 function projectedOpenCounterPenalty(candidate, myPicks, oppPicks, stage){
   if(!candidate || !stage || stage.type!=='pick' || stage.side!=='me') return 0;
   const futureOpp = futureOpponentPickCount(stage);
-  if(futureOpp <= 0) return 0;
   const locked = new Set([...actualPrebans(), ...myPicks, ...oppPicks]);
   const openThreats = HEROES.filter(h => h && !locked.has(h.id) && h.id !== candidate.id).map(h => {
     let threat = 0;
     if(getHeroHardIds(h).includes(candidate.id)) threat += 4.1;
-    for(const rel of NUANCED_COUNTERS){
-      if(rel.counter === h.id && rel.target === candidate.id) threat += rel.weight * 0.82;
+    for(const rel of MANUAL_ANCHOR_COUNTERS){
+      if(rel.counter === h.id && rel.target === candidate.id) threat += rel.weight * 0.58;
     }
     for(const risk of OPEN_COUNTER_RISKS){
       if(risk.target === candidate.id && (risk.counters||[]).includes(h.id)) threat += risk.weight * 0.78;
@@ -7333,10 +7393,24 @@ function projectedOpenCounterPenalty(candidate, myPicks, oppPicks, stage){
     if(HIGHROLLER_TURN_ONE.blockers.includes(h.id) && HIGHROLLER_TURN_ONE.core.includes(candidate.id)) threat += 1.4;
     return {id:h.id, threat};
   }).filter(x => x.threat > 0).sort((a,b)=>b.threat-a.threat);
-  if(!openThreats.length) return 0;
-  const top = openThreats.slice(0, Math.min(2, futureOpp));
-  const pressure = futureOpp >= 3 ? 0.88 : (futureOpp === 2 ? 0.70 : 0.50);
-  const rawPenalty = Math.min(8.6, top.reduce((sum, x) => sum + x.threat, 0) * pressure);
+  const top = futureOpp > 0 ? openThreats.slice(0, Math.min(2, futureOpp)) : [];
+  const pressure = futureOpp >= 3 ? 0.88 : (futureOpp === 2 ? 0.70 : (futureOpp === 1 ? 0.50 : 0));
+  const projectedThreat = top.reduce((sum, x) => sum + x.threat, 0);
+  let boardThreat = 0;
+  for(const oppId of oppPicks || []){
+    const oppHero = HERO_BY_ID[oppId];
+    if(!oppHero) continue;
+    if(getHeroHardIds(oppHero).includes(candidate.id)) boardThreat += 2.4;
+    for(const rel of MANUAL_ANCHOR_COUNTERS){
+      if(rel.counter === oppId && rel.target === candidate.id) boardThreat += rel.weight * 0.40;
+    }
+    for(const risk of OPEN_COUNTER_RISKS){
+      if(risk.target === candidate.id && (risk.counters||[]).includes(oppId)) boardThreat += risk.weight * 0.45;
+    }
+  }
+  boardThreat = Math.min(4.0, boardThreat);
+  const rawPenalty = Math.min(8.6, projectedThreat * pressure + boardThreat);
+  if(rawPenalty <= 0) return 0;
   const resilience = openCounterResilience(candidate);
   return rawPenalty * (0.90 * resilience + 0.10);
 }
@@ -7345,11 +7419,11 @@ function completionPressureBonus(candidate, myPicks){
   let score = 0;
   const directSyn = getHeroSynIds(candidate).filter(id => myPicks.includes(id)).length;
   score += directSyn * 1.2;
-  for(const p of PACKAGES){
+  for(const p of MANUAL_ANCHOR_PACKAGES){
     if(!p.members.includes(candidate.id)) continue;
     const linked = p.members.filter(id => id !== candidate.id && myPicks.includes(id)).length;
-    if(linked === 1) score += p.weight * 0.08;
-    if(linked >= 2) score += p.weight * 0.20;
+    if(linked === 1) score += p.weight * 0.05;
+    if(linked >= 2) score += p.weight * 0.12;
   }
   return Math.min(6.0, score);
 }
@@ -7361,7 +7435,7 @@ function isSpeedContestScenario(myPicks, oppPicks){
   return myPicks.some(isSpeedContestOpener) && oppPicks.some(isSpeedContestOpener);
 }
 function speedContestSkirmisherBonus(candidate, myPicks, oppPicks){
-  if(!candidate || !(candidate.tags||[]).includes('speed_contest')) return 0;
+  if(!candidate || !heroHasTag(candidate, 'speed_contest')) return 0;
   if(!isSpeedContestScenario(myPicks, oppPicks)) return 0;
   const openerCount = myPicks.filter(isSpeedContestOpener).length + oppPicks.filter(isSpeedContestOpener).length;
   const intensity = Math.min(1, Math.max(0, (openerCount - 2) / 3));
@@ -7375,15 +7449,21 @@ function hasObservedTempoPair(candidateId, myPicks){
 }
 
 function isHarsetiRiskHero(candidate){
-  return !!candidate && ((candidate.tags||[]).includes('first_turn') || (candidate.tags||[]).includes('speed_contest'));
+  return !!candidate && (heroHasTag(candidate, 'first_turn') || heroHasTag(candidate, 'speed_contest'));
+}
+function isHarsetiOnBoard(myPicks, oppPicks){
+  return [...(myPicks || []), ...(oppPicks || [])]
+    .map(normalizeHeroId)
+    .includes('HARSETI');
 }
 // 하르세티 오픈 패널티는 선턴잡이/속기각에만 약하게 적용
-function harsetiOpenFirstTurnPenalty(candidate){
+function harsetiOpenFirstTurnPenalty(candidate, myPicks = [], oppPicks = []){
   if(!isHarsetiRiskHero(candidate)) return 0;
   if(actualPrebans().includes('HARSETI')) return 0;
-  const tags = candidate.tags || [];
-  let penalty = tags.includes('first_turn') ? 1.35 : 1.05;
-  if(tags.includes('first_turn') && tags.includes('speed_contest')) penalty += 0.25;
+  const harsetiOnBoard = isHarsetiOnBoard(myPicks, oppPicks);
+  let penalty = heroHasTag(candidate, 'first_turn') ? 1.35 : 1.05;
+  if(heroHasTag(candidate, 'first_turn') && heroHasTag(candidate, 'speed_contest')) penalty += 0.25;
+  if(harsetiOnBoard) penalty += 0.95;
   if(HIGHROLLER_TURN_ONE.openers.includes(candidate.id)) penalty += 0.45;
   else if(HIGHROLLER_TURN_ONE.follow.includes(candidate.id)) penalty += 0.25;
   return Math.min(2.4, penalty);
@@ -7415,7 +7495,7 @@ function turnOneReplicabilityPenalty(candidate, myPicks, oppPicks, stage){
   const alliedTempo = myPicks.filter(id => HIGHROLLER_TURN_ONE.core.includes(id)).length;
   const alliedOpeners = myPicks.filter(id => HIGHROLLER_TURN_ONE.openers.includes(id)).length;
   const blockers = oppPicks.filter(id => HIGHROLLER_TURN_ONE.blockers.includes(id)).length;
-  let score = harsetiOpenFirstTurnPenalty(candidate);
+  let score = harsetiOpenFirstTurnPenalty(candidate, myPicks, oppPicks);
   if(!HIGHROLLER_TURN_ONE.core.includes(candidate.id)) return Math.min(2.4, score);
   if(state.side!=='first') score += 0.45;
   if(totalPicked <= 2 && HIGHROLLER_TURN_ONE.follow.includes(candidate.id) && alliedOpeners===0) score += 0.35;
@@ -7490,16 +7570,31 @@ function getLegendMetaSnapshot(hero){
     metaTier: metaTierAmplifier(metaRaw)
   };
 }
+function getMetaCeilingByPick(pick){
+  const p = Math.max(0, Number(pick || 0));
+  if(p < 0.5) return 3.2;
+  if(p < 1.0) return 3.8;
+  if(p < 2.0) return 4.4;
+  if(p < 4.0) return 5.2;
+  if(p < 8.0) return 6.2;
+  if(p < 15.0) return 7.1;
+  return 8.2;
+}
 function getBaselineMetaScore(hero, reliability=1){
   const snapshot = getLegendMetaSnapshot(hero);
   const normalized = Math.min(1, Math.max(0, Math.log1p(snapshot.metaRaw) / Math.log1p(18.5)));
   const gateWeight = 0.76 + snapshot.metaGate * 0.24;
   const reliabilityWeight = 0.80 + Math.max(0, Math.min(1, reliability)) * 0.20;
   const compressed = 0.92 + Math.pow(normalized, 0.92) * 2.88;
+  const rawScore = compressed * gateWeight * reliabilityWeight * 2.3;
+  const ceiling = getMetaCeilingByPick(hero?.pick);
+  const score = Math.min(rawScore, ceiling);
   return {
     ...snapshot,
     metaNormalized: normalized,
-    score: compressed * gateWeight * reliabilityWeight * 2.3
+    rawScore,
+    ceiling,
+    score
   };
 }
 const SHARED_SIGNAL_BUCKET_FACTORS = [1, 0.74, 0.56, 0.40, 0.28, 0.18];
@@ -7571,14 +7666,14 @@ function buildReasons(c, myPicks, oppPicks, earlyValue=0, vanguardValue=0, arche
   if(counterHits.length) out.push('상대 카운터 가능: ' + counterHits.join(', '));
   const reverseHits = oppPicks.filter(id => getHeroHardIds(HERO_BY_ID[id]).includes(c.id)).slice(0,2).map(id=>HERO_BY_ID[id]?.name).filter(Boolean);
   if(reverseHits.length) out.push('상대에게 취약: ' + reverseHits.join(', '));
-  for(const rel of NUANCED_COUNTERS){
+  for(const rel of MANUAL_ANCHOR_COUNTERS){
     if(rel.counter === c.id && oppPicks.includes(rel.target)){
       const targetName = getHeroDisplayName(rel.target);
       out.push('특수 카운터: ' + targetName + ' 상대로 유리');
       break;
     }
   }
-  for(const p of PACKAGES){
+  for(const p of MANUAL_ANCHOR_PACKAGES){
     if(p.members.includes(c.id)){
       const count = p.members.filter(id=>id!==c.id && myPicks.includes(id)).length;
       if(count>=1){ out.push('조합 연결: ' + p.name); break; }
@@ -7613,13 +7708,13 @@ function computeFinalBanSuggestion(){
       if(getHeroHardIds(me).includes(id)){
         threat -= 3.8;
       }
-      for(const rel of NUANCED_COUNTERS){
+      for(const rel of MANUAL_ANCHOR_COUNTERS){
         if(rel.counter === id && rel.target === myId){
-          threat += rel.weight * 1.45;
+          threat += rel.weight * 1.02;
           reasons.push(`${me.name} \uce74\uc6b4\ud130`);
         }
         if(rel.counter === myId && rel.target === id){
-          threat -= rel.weight * 0.65;
+          threat -= rel.weight * 0.46;
         }
       }
     }
@@ -8096,23 +8191,79 @@ async function loadRuntimeOverlayData(forceReload=false, files=null){
 function getOverlayHeroEntry(heroId){
   return runtimeOverlayState.data?.heroes?.[normalizeHeroId(heroId)] || null;
 }
+function getOverlayHero(heroId){
+  return runtimeOverlayState?.ready && runtimeOverlayState?.data?.heroes
+    ? runtimeOverlayState.data.heroes[normalizeHeroId(heroId)] || null
+    : null;
+}
 function getOverlayTopSynergies(heroId){
-  return getOverlayHeroEntry(heroId)?.topSynergies || [];
+  return getOverlayHero(heroId)?.topSynergies || [];
 }
 function getOverlayTopCounters(heroId){
-  return getOverlayHeroEntry(heroId)?.topCounters || [];
+  return getOverlayHero(heroId)?.topCounters || [];
 }
 function getOverlayRoleScore(heroId, roleKey){
-  return Number(getOverlayHeroEntry(heroId)?.roles?.[roleKey] || 0);
+  return Number(getOverlayHero(heroId)?.roles?.[roleKey] || 0);
 }
 function getOverlayProtection(heroId){
-  return getOverlayHeroEntry(heroId)?.protection || {
+  return getOverlayHero(heroId)?.protection || {
     relationCapScale:0,
     confidenceCapScale:0,
     earlyStageGate:0,
     lateStageRelief:0,
     suppressed:false
   };
+}
+function getOverlaySynergyBonus(heroId, myPicks){
+  const row = getOverlayHero(heroId);
+  if(!row?.topSynergies?.length) return 0;
+  const picked = new Set((myPicks || []).map(normalizeHeroId));
+  let total = 0;
+  for(const item of row.topSynergies){
+    if(picked.has(item.id)) total += Number(item.score || 0) * Number(item.confidence || 0);
+  }
+  const capScale = Number(row?.protection?.relationCapScale || 1);
+  return Math.min(total * 0.9, 1.15 * capScale);
+}
+function getOverlayCounterBonus(heroId, oppPicks){
+  const row = getOverlayHero(heroId);
+  if(!row?.topCounters?.length) return 0;
+  const picked = new Set((oppPicks || []).map(normalizeHeroId));
+  let total = 0;
+  for(const item of row.topCounters){
+    if(picked.has(item.id)) total += Number(item.score || 0) * Number(item.confidence || 0);
+  }
+  const capScale = Number(row?.protection?.relationCapScale || 1);
+  return Math.min(total * 0.9, 1.15 * capScale);
+}
+function getOverlayRoleBonus(heroId, stage){
+  const row = getOverlayHero(heroId);
+  if(!row?.roles) return { early:0, vanguard:0, urgency:0 };
+  const firstpick = Number(row.roles.firstpick || 0);
+  const vanguard = Number(row.roles.vanguard || 0);
+  const preban = Number(row.roles.preban || 0);
+  const banPressure = Number(row.roles.banPressure || 0);
+  const presence = Number(row.roles.presence || 0);
+  const gate = Number(row?.protection?.earlyStageGate || 1);
+  const relief = Number(row?.protection?.lateStageRelief || 1);
+  const idx = Number(stage?.pickIndex || (stage?.type === 'pick' && stage?.side === 'me' ? (myBoardAfterCurrent().length + 1) : 0));
+
+  let early = 0;
+  let vg = 0;
+  let urgency = 0;
+
+  if(stage?.type === 'pick'){
+    if(idx <= 2){
+      early = Math.min((firstpick * 5.0 + presence * 2.0) * gate, 1.2);
+    } else if(idx === 3){
+      vg = Math.min(vanguard * 4.5 * relief, 1.15);
+    } else {
+      vg = Math.min(vanguard * 3.2 * relief, 0.8);
+    }
+  }
+
+  urgency = Math.min(preban * 1.8 + banPressure * 2.2, 0.9);
+  return { early, vanguard:vg, urgency };
 }
 function preprocessCompiledPatternData(raw){
   if(!raw || typeof raw !== 'object') throw new Error('compiled relation data ??? ???? ????.');
@@ -8302,7 +8453,7 @@ function getCompiledPatternAdjustment(candidateId, myPicks, oppPicks, stage, com
   const preban = stage?.type === 'pick' && stage?.side === 'me'
     ? clampRelationValue(Number(prebanStat.score || 0) * 2.6, 0, 1.4)
     : 0;
-  const exposure = clampRelationValue(-Number(banPressureStat.score || 0) * 1.8, -1.6, 0);
+  const exposure = clampRelationValue(-Number(banPressureStat.score || 0) * 1.25, -1.1, 0);
   const decoy = Number((HERO_BY_ID[heroId]?.ban || 0)) >= 18
     ? clampRelationValue(Number(banPressureStat.score || 0) * 0.52, 0, 0.55)
     : 0;
@@ -8657,44 +8808,69 @@ function scoreHero(candidateId, myPicks, oppPicks, stage, ctx){
   const reliability = heroReliabilityMultiplier(c);
   const repeatAxisPenalty = Math.min(2.8, Math.max(0, context.myPicks.length - 1) * 0.42);
   const metaBase = getBaselineMetaScore(c, reliability);
-  const patternParts = getCompiledPatternAdjustment(c.id, context.myPicks, context.oppPicks, stage, context.patternStats);
+  const patternParts = {
+    total:0,
+    preban:0,
+    early:0,
+    vanguard:0,
+    exposure:0,
+    decoy:0,
+    synergy:0,
+    package:0,
+    completion:0,
+    counter:0,
+    confidenceMean:0,
+    contextualReliability:0,
+    games:{hero:0, pair:0, package:0, counter:0},
+    lowPickGuard:{suppressed:false, relationCap:0, lateStageRelief:1}
+  };
   const counterProfile = counterBonus(c, context.oppPicks);
   const openCounterBase = projectedOpenCounterPenalty(c, context.myPicks, context.oppPicks, stage);
+  const counterReliability = positiveCounterReliabilityMultiplier(openCounterBase, counterProfile);
   const auxiliaryGate = lowPickAuxiliaryGate(c);
   const meta = metaBase.score;
-  const relationBucket = applyDirectionalEvidenceBucket([
-    {key:'matrixSynergy', value:patternParts.synergy},
-    {key:'matrixPack', value:patternParts.package},
-    {key:'matrixCompletion', value:patternParts.completion},
-    {key:'matrixVanguard', value:patternParts.vanguard}
-  ], HERO_SHARED_SIGNAL_BUCKET_OPTIONS);
-  const counters = patternParts.counter;
-  const earlyRaw = patternParts.early * auxiliaryGate;
-  const urgencyRaw = ((c.ban * 0.05 + commonThreatWeight(c)) * reliability + patternParts.preban) * auxiliaryGate;
-  const exposure = -finalBanExposurePenalty(c, context.myPicks) + patternParts.exposure;
-  const reliefRaw = (decoyRelief(c) + patternParts.decoy) * auxiliaryGate * (patternParts.lowPickGuard?.lateStageRelief || 1);
+  const stageWeights = context.synergyStageWeights || {synergy:1, pack:1, completion:1};
+  const relationBucket = { values:{matrixSynergy:0, matrixPack:0, matrixCompletion:0, matrixVanguard:0}, total:0, positiveTotal:0 };
+  const sparseSynergy = clampRelationValue(synergyBonus(c, context.myPicks) * Number(stageWeights.synergy || 1) * 0.24, 0, 6.2);
+  const sparsePackage = clampRelationValue(packageBonus(c.id, context.myPicks, context.oppPicks) * Number(stageWeights.pack || 1) * 0.20, 0, 5.2);
+  const sparseCompletion = clampRelationValue(completionPressureBonus(c, context.myPicks) * Number(stageWeights.completion || 1) * 0.26, 0, 4.6);
+  const sparseCounter = clampRelationValue(counterProfile.score * counterReliability * 0.24, -4.6, 5.4);
+  const overlaySynergy = getOverlaySynergyBonus(c.id, context.myPicks);
+  const overlayCounter = getOverlayCounterBonus(c.id, context.oppPicks);
+  const overlayRole = getOverlayRoleBonus(c.id, stage);
+  let counters = sparseCounter;
+  const earlyRaw = 0;
+  const urgencyRaw = ((c.ban * 0.05 + commonThreatWeight(c)) * reliability) * auxiliaryGate;
+  const exposure = -finalBanExposurePenalty(c, context.myPicks);
+  const reliefRaw = decoyRelief(c) * auxiliaryGate;
   const auxiliaryParts = applyAuxiliaryBonusCap(c, meta, {early:earlyRaw, urgency:urgencyRaw, relief:reliefRaw});
   const speedContestSource = speedContestSkirmisherBonus(c, context.myPicks, context.oppPicks) * reliability;
   const firstTurnPenaltySource = vanguardFirstTurnPenalty(c, context.myPicks, context.oppPicks);
-  const synergy = relationBucket.values.matrixSynergy || 0;
+  let synergy = sparseSynergy;
   const packPenalty = repeatAxisPenalty * 0.24;
   const completionPenalty = repeatAxisPenalty * 0.18;
-  const pack = (relationBucket.values.matrixPack || 0) - packPenalty;
-  const completion = (relationBucket.values.matrixCompletion || 0) - completionPenalty;
-  const early = auxiliaryParts.values.early || 0;
-  const urgency = auxiliaryParts.values.urgency || 0;
+  const pack = sparsePackage - packPenalty;
+  const completion = sparseCompletion - completionPenalty;
+  let early = auxiliaryParts.values.early || 0;
+  let urgency = auxiliaryParts.values.urgency || 0;
   const relief = auxiliaryParts.values.relief || 0;
-  const vanguard = relationBucket.values.matrixVanguard || 0;
+  let vanguard = 0;
+
+  synergy += overlaySynergy;
+  counters += overlayCounter;
+  early += overlayRole.early;
+  vanguard += overlayRole.vanguard;
+  urgency += overlayRole.urgency;
   const archetype = turnOneArchetypeBonus(c, context.myPicks, context.oppPicks, stage) * reliability + speedContestSource;
-  const reproducibility = -turnOneReplicabilityPenalty(c, context.myPicks, context.oppPicks, stage) + (patternParts.contextualReliability || 0) + firstTurnPenaltySource;
-  const openCounter = -dampenOpenCounterPenalty(openCounterBase, counterProfile, c);
+  const reproducibility = -turnOneReplicabilityPenalty(c, context.myPicks, context.oppPicks, stage) + firstTurnPenaltySource;
+  const openCounter = -dampenOpenCounterPenalty(openCounterBase, counterProfile, c) * 0.72;
 
   const total = meta + synergy + counters + pack + completion + early + urgency + exposure + relief + vanguard + archetype + reproducibility + openCounter;
   return {
     hero:c,
     total,
     breakdown:{
-      meta, metaRaw:metaBase.metaRaw, metaPick:metaBase.pick, metaWin:metaBase.win, metaBan:metaBase.ban,
+      meta, metaRaw:metaBase.metaRaw, metaPick:metaBase.pick, metaWin:metaBase.win, metaBan:metaBase.ban, metaRawScore:metaBase.rawScore || meta, metaCeiling:metaBase.ceiling || meta,
       synergy, counters, pack, completion, early, urgency, exposure, relief, vanguard, archetype, reproducibility, openCounter, reliability,
       bucketSources:{
         patternTotal:patternParts.total,
@@ -8724,10 +8900,20 @@ function scoreHero(candidateId, myPicks, oppPicks, stage, ctx){
         relationBucketPositive:relationBucket.positiveTotal,
         counterPositive:counterProfile.positive,
         counterNegative:counterProfile.negative,
-        counterReliability:1,
+        counterReliabilityBase:1,
         openCounterBase,
         lowPickSuppressed:patternParts.lowPickGuard?.suppressed || false,
-        lowPickRelationCap:patternParts.lowPickGuard?.relationCap || 0
+        lowPickRelationCap:patternParts.lowPickGuard?.relationCap || 0,
+        overlaySynergy,
+        overlayCounter,
+        overlayEarly:overlayRole.early,
+        overlayVanguard:overlayRole.vanguard,
+        overlayUrgency:overlayRole.urgency,
+        sparseSynergy,
+        sparsePackage,
+        sparseCompletion,
+        sparseCounter,
+        counterReliability
       }
     },
     reasons:buildReasons(c, context.myPicks, context.oppPicks, early, vanguard, archetype, reproducibility, openCounter, reliability, speedContestSource)

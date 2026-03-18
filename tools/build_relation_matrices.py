@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import math
@@ -38,39 +38,81 @@ def round4(value: float) -> float:
     return round(float(value), 4)
 
 
-def resolve_overlay_relation_id(raw_id: str, hero_by_id: dict, alias_map: dict, name_to_id: dict) -> tuple[str | None, bool]:
+def normalize_lookup_name(raw: str) -> str:
+    return ''.join(str(raw or '').replace('_', ' ').split()).lower()
+
+
+def resolve_overlay_relation_id(raw_id: str, hero_by_id: dict, alias_map: dict, name_to_id: dict, normalized_name_to_id: dict) -> tuple[str | None, bool, bool]:
     if raw_id in hero_by_id:
-        return raw_id, False
+        return raw_id, False, False
     alias_target = alias_map.get(raw_id)
     if alias_target and alias_target in hero_by_id:
-        return alias_target, False
-    if raw_id.startswith('EXT_'):
-        human_name = raw_id[4:].replace('_', ' ').strip()
-        if human_name in name_to_id:
-            return name_to_id[human_name], False
-    if raw_id in name_to_id:
-        return name_to_id[raw_id], False
-    return raw_id, True
+        return alias_target, True, False
+    human_name = raw_id[4:].replace('_', ' ').strip() if raw_id.startswith('EXT_') else str(raw_id or '').strip()
+    if human_name in name_to_id:
+        return name_to_id[human_name], True, False
+    normalized_name = normalize_lookup_name(human_name)
+    if normalized_name in normalized_name_to_id:
+        return normalized_name_to_id[normalized_name], True, False
+    return raw_id, False, True
 
 
-def build_overlay_relation_list(row: dict, hero_id: str, hero_by_id: dict, alias_map: dict, name_to_id: dict, top_n: int = 8, confidence_floor: float = 0.26) -> tuple[list[dict], int]:
+SOURCE_PRIORITY = [
+    'legendWith',
+    'legendHard',
+    'pairLift',
+    'packageLift',
+    'weakHint',
+    'reverseWeakHint',
+    'banPressure',
+]
+
+
+def pick_relation_source(entry: dict) -> str:
+    sources = entry.get('sources') or {}
+    for key in SOURCE_PRIORITY:
+        if sources.get(key):
+            return key
+    if sources:
+        return sorted(sources.keys())[0]
+    return 'matrix'
+
+
+def count_relation_sources(relations: list[dict]) -> dict:
+    counts: dict[str, int] = {}
+    for item in relations:
+        source = str(item.get('source') or 'unknown')
+        counts[source] = counts.get(source, 0) + 1
+    return counts
+
+
+def build_overlay_relation_list(row: dict, hero_id: str, hero_by_id: dict, alias_map: dict, name_to_id: dict, normalized_name_to_id: dict, top_n: int = 8, min_n: int = 8) -> tuple[list[dict], dict]:
     selected = []
-    unresolved = 0
+    unresolved_ids: list[str] = []
+    fallback_used = False
     for target_id, entry in (row or {}).items():
-        resolved_id, unresolved_flag = resolve_overlay_relation_id(target_id, hero_by_id, alias_map, name_to_id)
+        resolved_id, used_fallback, unresolved_flag = resolve_overlay_relation_id(target_id, hero_by_id, alias_map, name_to_id, normalized_name_to_id)
         if not resolved_id or resolved_id == hero_id:
             continue
+        raw_score = float(entry.get('rawScore') or 0.0)
         score = float(entry.get('score') or 0.0)
         confidence = float(entry.get('confidence') or 0.0)
-        if score <= 0 or confidence < confidence_floor:
+        if max(raw_score, score) <= 0:
             continue
+        adjusted_confidence = max(0.08, confidence)
+        adjusted_score = max(score, raw_score * max(0.12, adjusted_confidence * 0.72))
         selected.append({
             'id': resolved_id,
-            'score': round4(score),
-            'confidence': round4(confidence),
+            'score': round4(adjusted_score),
+            'confidence': round4(adjusted_confidence),
+            'source': pick_relation_source(entry),
+            '_score': score,
+            '_raw': raw_score,
+            '_confidence': confidence,
             '_unresolved': unresolved_flag,
         })
-    selected.sort(key=lambda item: (-item['score'], -item['confidence'], item['id']))
+        fallback_used = fallback_used or used_fallback
+    selected.sort(key=lambda item: (-item['_score'], -item['_raw'], -item['_confidence'], item['id']))
     trimmed = []
     seen = set()
     for item in selected:
@@ -78,11 +120,42 @@ def build_overlay_relation_list(row: dict, hero_id: str, hero_by_id: dict, alias
             continue
         seen.add(item['id'])
         if item.pop('_unresolved', False):
-            unresolved += 1
+            unresolved_ids.append(str(item['id']))
+        item.pop('_score', None)
+        item.pop('_raw', None)
+        item.pop('_confidence', None)
         trimmed.append(item)
         if len(trimmed) >= top_n:
             break
-    return trimmed, unresolved
+    diagnostics = {
+        'unresolvedIds': unresolved_ids,
+        'fallbackUsed': fallback_used,
+        'shortage': len(trimmed) < min_n,
+        'available': len(trimmed),
+    }
+    return trimmed, diagnostics
+
+
+def build_bad_vs_list(counter_rows: dict, hero_id: str, hero_by_id: dict, alias_map: dict, name_to_id: dict, normalized_name_to_id: dict, top_n: int = 8, min_n: int = 8) -> tuple[list[dict], dict]:
+    reverse_row = {}
+    for other_id, row in (counter_rows or {}).items():
+        if other_id == hero_id:
+            continue
+        entry = (row or {}).get(hero_id)
+        if not entry:
+            continue
+        if max(float(entry.get('rawScore') or 0.0), float(entry.get('score') or 0.0)) <= 0:
+            continue
+        reverse_row[other_id] = entry
+    return build_overlay_relation_list(reverse_row, hero_id, hero_by_id, alias_map, name_to_id, normalized_name_to_id, top_n=top_n, min_n=min_n)
+
+
+def build_role_overlay_value(section: dict, hero_id: str) -> dict:
+    entry = (section or {}).get(hero_id, {}) or {}
+    return {
+        'score': round4(float(entry.get('score') or 0.0)),
+        'confidence': round4(float(entry.get('confidence') or 0.0)),
+    }
 
 
 def build_runtime_overlay(compiled_heroes: dict, counter_matrix: dict, synergy_matrix: dict, role_scores: dict) -> dict:
@@ -90,54 +163,103 @@ def build_runtime_overlay(compiled_heroes: dict, counter_matrix: dict, synergy_m
     hero_by_id = {hero['id']: hero for hero in heroes}
     alias_map = compiled_heroes.get('aliases', {}) or {}
     name_to_id = {hero['name']: hero['id'] for hero in heroes}
+    normalized_name_to_id = {normalize_lookup_name(hero['name']): hero['id'] for hero in heroes}
     counter_rows = counter_matrix.get('counterMatrix', {}) or {}
     synergy_rows = synergy_matrix.get('synergyMatrix', {}) or {}
     overlay_heroes = {}
-    unresolved_ids = []
-    total_synergies = 0
-    total_counters = 0
+    unresolved_ids: list[str] = []
+    total_helps = 0
+    total_good = 0
+    total_bad = 0
+    shortage_heroes = 0
 
     for hero in heroes:
         hero_id = hero['id']
-        synergy_list, synergy_unresolved = build_overlay_relation_list(synergy_rows.get(hero_id, {}), hero_id, hero_by_id, alias_map, name_to_id)
-        counter_list, counter_unresolved = build_overlay_relation_list(counter_rows.get(hero_id, {}), hero_id, hero_by_id, alias_map, name_to_id)
-        if synergy_unresolved:
-            unresolved_ids.extend([f'{hero_id}:synergy'] * synergy_unresolved)
-        if counter_unresolved:
-            unresolved_ids.extend([f'{hero_id}:counter'] * counter_unresolved)
-        total_synergies += len(synergy_list)
-        total_counters += len(counter_list)
+        helps_with, helps_diag = build_overlay_relation_list(
+            synergy_rows.get(hero_id, {}),
+            hero_id,
+            hero_by_id,
+            alias_map,
+            name_to_id,
+            normalized_name_to_id,
+        )
+        good_vs, good_diag = build_overlay_relation_list(
+            counter_rows.get(hero_id, {}),
+            hero_id,
+            hero_by_id,
+            alias_map,
+            name_to_id,
+            normalized_name_to_id,
+        )
+        bad_vs, bad_diag = build_bad_vs_list(
+            counter_rows,
+            hero_id,
+            hero_by_id,
+            alias_map,
+            name_to_id,
+            normalized_name_to_id,
+        )
+        hero_unresolved = [
+            *[f'{hero_id}:helpsWith:{raw}' for raw in helps_diag['unresolvedIds']],
+            *[f'{hero_id}:goodVs:{raw}' for raw in good_diag['unresolvedIds']],
+            *[f'{hero_id}:badVs:{raw}' for raw in bad_diag['unresolvedIds']],
+        ]
+        unresolved_ids.extend(hero_unresolved)
+        total_helps += len(helps_with)
+        total_good += len(good_vs)
+        total_bad += len(bad_vs)
+        if helps_diag['shortage'] or good_diag['shortage'] or bad_diag['shortage']:
+            shortage_heroes += 1
+        presence_entry = (role_scores.get('presence', {}) or {}).get(hero_id, {}) or {}
+        protection_entry = (role_scores.get('protection', {}) or {}).get(hero_id, {}) or {}
         overlay_heroes[hero_id] = {
-            'topSynergies': synergy_list,
-            'topCounters': counter_list,
-            'roles': {
-                'firstpick': round4(float((role_scores.get('firstpick', {}) or {}).get(hero_id, {}).get('score') or 0.0)),
-                'vanguard': round4(float((role_scores.get('vanguard', {}) or {}).get(hero_id, {}).get('score') or 0.0)),
-                'preban': round4(float((role_scores.get('preban', {}) or {}).get(hero_id, {}).get('score') or 0.0)),
-                'banPressure': round4(float((role_scores.get('banPressure', {}) or {}).get(hero_id, {}).get('score') or 0.0)),
-                'presence': round4(float((role_scores.get('presence', {}) or {}).get(hero_id, {}).get('score') or 0.0)),
-            },
+            'helpsWith': helps_with,
+            'goodVs': good_vs,
+            'badVs': bad_vs,
+            'firstpick': build_role_overlay_value(role_scores.get('firstpick', {}), hero_id),
+            'vanguard': build_role_overlay_value(role_scores.get('vanguard', {}), hero_id),
+            'preban': build_role_overlay_value(role_scores.get('preban', {}), hero_id),
+            'banPressure': build_role_overlay_value(role_scores.get('banPressure', {}), hero_id),
             'protection': {
-                'relationCapScale': round4(float((role_scores.get('protection', {}) or {}).get(hero_id, {}).get('relationCapScale') or 0.0)),
-                'confidenceCapScale': round4(float((role_scores.get('protection', {}) or {}).get(hero_id, {}).get('confidenceCapScale') or 0.0)),
-                'earlyStageGate': round4(float((role_scores.get('protection', {}) or {}).get(hero_id, {}).get('earlyStageGate') or 0.0)),
-                'lateStageRelief': round4(float((role_scores.get('protection', {}) or {}).get(hero_id, {}).get('lateStageRelief') or 0.0)),
-                'suppressed': bool((role_scores.get('protection', {}) or {}).get(hero_id, {}).get('suppressed')),
-            }
+                'relationCapScale': round4(float(protection_entry.get('relationCapScale') or 0.0)),
+                'confidenceCapScale': round4(float(protection_entry.get('confidenceCapScale') or 0.0)),
+                'earlyStageGate': round4(float(protection_entry.get('earlyStageGate') or 0.0)),
+                'lateStageRelief': round4(float(protection_entry.get('lateStageRelief') or 0.0)),
+            },
+            'diagnostics': {
+                'presenceRate': round4(float(presence_entry.get('rate') or presence_entry.get('score') or 0.0)),
+                'sourceCounts': {
+                    'helpsWith': count_relation_sources(helps_with),
+                    'goodVs': count_relation_sources(good_vs),
+                    'badVs': count_relation_sources(bad_vs),
+                    'relationCounts': {
+                        'helpsWith': len(helps_with),
+                        'goodVs': len(good_vs),
+                        'badVs': len(bad_vs),
+                    },
+                    'shortages': {
+                        'helpsWith': bool(helps_diag['shortage']),
+                        'goodVs': bool(good_diag['shortage']),
+                        'badVs': bool(bad_diag['shortage']),
+                    },
+                },
+                'fallbackUsed': bool(helps_diag['fallbackUsed'] or good_diag['fallbackUsed'] or bad_diag['fallbackUsed']),
+            },
         }
 
     return {
         'heroes': overlay_heroes,
         'meta': {
             'heroCount': len(heroes),
-            'sourceVersion': f"overlay-v1/matrix-{counter_matrix.get('version', 1)}-{synergy_matrix.get('version', 1)}-role-{role_scores.get('version', 1)}",
+            'sourceVersion': f"overlay-v2/matrix-{counter_matrix.get('version', 1)}-{synergy_matrix.get('version', 1)}-role-{role_scores.get('version', 1)}",
             'buildSummary': {
-                'topRelationLimit': 8,
-                'confidenceFloor': 0.26,
-                'avgTopSynergies': round4(total_synergies / max(1, len(heroes))),
-                'avgTopCounters': round4(total_counters / max(1, len(heroes))),
+                'relationLimit': 8,
+                'avgHelpsWith': round4(total_helps / max(1, len(heroes))),
+                'avgGoodVs': round4(total_good / max(1, len(heroes))),
+                'avgBadVs': round4(total_bad / max(1, len(heroes))),
                 'unresolvedIds': unresolved_ids,
                 'unresolvedCount': len(unresolved_ids),
+                'shortageHeroes': shortage_heroes,
                 'sourceHeroCount': len(heroes),
                 'counterNonzero': int(counter_matrix.get('buildSummary', {}).get('nonzeroRelations', 0)),
                 'synergyNonzero': int(synergy_matrix.get('buildSummary', {}).get('nonzeroRelations', 0)),
@@ -145,7 +267,6 @@ def build_runtime_overlay(compiled_heroes: dict, counter_matrix: dict, synergy_m
             }
         }
     }
-
 
 def zero_relation() -> dict:
     return {
@@ -510,8 +631,9 @@ def main() -> None:
         'synergy_nonzero_relations': synergy_nonzero,
         'confidence_weakened_relations': confidence_weakened,
         'low_pick_suppressed_heroes': low_pick_suppressed,
-        'overlay_avg_top_synergies': runtime_overlay['meta']['buildSummary']['avgTopSynergies'],
-        'overlay_avg_top_counters': runtime_overlay['meta']['buildSummary']['avgTopCounters'],
+        'overlay_avg_helps_with': runtime_overlay['meta']['buildSummary']['avgHelpsWith'],
+        'overlay_avg_good_vs': runtime_overlay['meta']['buildSummary']['avgGoodVs'],
+        'overlay_avg_bad_vs': runtime_overlay['meta']['buildSummary']['avgBadVs'],
         'overlay_unresolved_ids': runtime_overlay['meta']['buildSummary']['unresolvedCount'],
         'outputs': [
             str(MATCHUP_OUT.relative_to(ROOT)).replace('\\', '/'),

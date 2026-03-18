@@ -6674,7 +6674,7 @@ function buildSynergyPanelCandidate(baseHero, candidateHero){
   }
   for(const p of MANUAL_ANCHOR_PACKAGES){
     if(p.members.includes(baseHero.id) && p.members.includes(candidateHero.id)){
-      score += Math.min(5.2, p.weight * 0.22);
+      score += Math.min(3.6, p.weight * 0.14);
       reasons.push('\uac19\uc740 \uc870\ud569 \ucd95 \uc5f0\uacb0');
       break;
     }

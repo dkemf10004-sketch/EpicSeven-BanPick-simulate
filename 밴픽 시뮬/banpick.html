@@ -9410,8 +9410,13 @@ function scoreHero(candidateId, myPicks, oppPicks, stage, ctx){
       * Math.min(1.10, 0.74 + protection.confidenceCapScale * 0.12)
   );
   const urgencyRaw = 0;
-  const isVanguardPick = stage?.type === 'pick' && stage?.side === 'me' && (context.myPicks.length + 1) === 3;
-  const exposure = isVanguardPick ? 0 : -finalBanExposurePenalty(c, context.myPicks);
+  const myNextPickIdx = stage?.type === 'pick' && stage?.side === 'me' ? (context.myPicks.length + 1) : 0;
+  const isVanguardPick = myNextPickIdx === 3;
+  const isLatePick = myNextPickIdx >= 4;
+  const rawExposure = finalBanExposurePenalty(c, context.myPicks);
+  const exposure = isVanguardPick ? 0
+    : isLatePick ? Math.min(0, -(rawExposure - 1.2))
+    : -rawExposure;
   const reliefRaw = decoyRelief(c) * auxiliaryGate;
   const auxiliaryParts = applyAuxiliaryBonusCap(c, meta, {early:0, urgency:urgencyRaw, relief:reliefRaw});
   const pack = 0;
@@ -9456,7 +9461,8 @@ function scoreHero(candidateId, myPicks, oppPicks, stage, ctx){
     }
   };
 
-  const total = meta + synergy + counters + completion + early + urgency + exposure + relief + vanguard + archetype + reproducibility + openCounter;
+  const speedContest = speedContestSkirmisherBonus(c, context.myPicks, context.oppPicks);
+  const total = meta + synergy + counters + completion + early + urgency + exposure + relief + vanguard + archetype + reproducibility + openCounter + speedContest;
   if(c.id === 'BELIAN' || c.id === 'RINAK'){
     console.debug('[scoreHero audit]', {
       candidateId:c.id,
@@ -9522,7 +9528,7 @@ function scoreHero(candidateId, myPicks, oppPicks, stage, ctx){
         patternCompletion:patternParts.completion,
         patternConfidence:patternParts.confidenceMean || 0,
         contextualReliability:patternParts.contextualReliability || 0,
-        speedContest:0,
+        speedContest,
         firstTurnPenalty:0,
         roleLog:0,
         repeatAxisPenalty:0,
@@ -9974,6 +9980,8 @@ connectWebSocket();
 </script>
 </body>
 </html>
+
+
 
 
 

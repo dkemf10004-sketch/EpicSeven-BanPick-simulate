@@ -370,7 +370,6 @@
       "win": 67.26,
       "ban": 21.03,
       "hard": [
-        "ARUNKA",
         "DARK_DIEANE",
         "YULHA"
       ],
@@ -406,7 +405,6 @@
       "win": 59.09,
       "ban": 17.35,
       "hard": [
-        "MORT",
         "ARUNKA",
         "YULHA"
       ],
@@ -527,7 +525,6 @@
       "ban": 17.08,
       "hard": [
         "YULHA",
-        "RINAK",
         "ARUNKA"
       ],
       "syn": [
@@ -880,7 +877,6 @@
       "win": 67.73,
       "ban": 49.11,
       "hard": [
-        "ISEPUNISH_ARIA",
         "ORIGIN_RAS",
         "RUEL"
       ],
@@ -1186,8 +1182,7 @@
       "ban": 15.84,
       "hard": [
         "RINAK",
-        "ARUNKA",
-        "SKY_ILLYNAV"
+        "ARUNKA"
       ],
       "syn": [
         "ORIGIN_RAS",
@@ -1396,8 +1391,6 @@
       "win": 62.79,
       "ban": 18.03,
       "hard": [
-        "YULHA",
-        "ORIGIN_RAS",
         "DARK_DIEANE"
       ],
       "syn": [
@@ -1608,7 +1601,6 @@
       "win": 64.61,
       "ban": 32.95,
       "hard": [
-        "ARUNKA",
         "YULHA",
         "DARK_DIEANE"
       ],
@@ -1647,7 +1639,6 @@
       "ban": 20.83,
       "hard": [
         "ARUNKA",
-        "SECRET",
         "ORIGIN_RAS"
       ],
       "syn": [
@@ -1776,7 +1767,6 @@
       "ban": 53.34,
       "hard": [
         "FLAN",
-        "ARUNKA",
         "ASHEN_ISERIA"
       ],
       "syn": [
@@ -4118,7 +4108,6 @@
       "win": 59.02,
       "ban": 20.0,
       "hard": [
-        "BELIAN",
         "YULHA",
         "ARUNKA"
       ],

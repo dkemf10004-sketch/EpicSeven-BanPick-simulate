@@ -27,7 +27,7 @@
 - A/B/C: helpsWith 7/5/0 | goodVs 12/0/0 | badVs 12/0/0
 - fallback count: total 0 | helpsWith 0 / goodVs 0 / badVs 0
 - added counter anchors
-  - none
+  - goodVs 바다의 유령 폴리티스 (SCENT_POLITIS) | source legendHard | grade A | confidence 0.7473 | sampleCount 245
 
 ### 보건교사 율하 (YULHA)
 - counts: helpsWith 12 / goodVs 12 / badVs 13
@@ -62,28 +62,28 @@
 - A/B/C: helpsWith 9/3/0 | goodVs 13/0/0 | badVs 12/1/0
 - fallback count: total 0 | helpsWith 0 / goodVs 0 / badVs 0
 - added counter anchors
-  - none
+  - goodVs 죄악의 안젤리카 (EXT_죄악의_안젤리카) | source legendHard | grade A | confidence 0.4319 | sampleCount 46
 
 ### 창공의 일리나브 (SKY_ILLYNAV)
 - counts: helpsWith 12 / goodVs 18 / badVs 12
 - A/B/C: helpsWith 7/5/0 | goodVs 12/6/0 | badVs 12/0/0
 - fallback count: total 0 | helpsWith 0 / goodVs 0 / badVs 0
 - added counter anchors
-  - none
+  - goodVs 디에네 (EXT_디에네) | source legendHard | grade A | confidence 0.3998 | sampleCount 52
 
 ### 벨리안 (BELIAN)
 - counts: helpsWith 12 / goodVs 16 / badVs 14
 - A/B/C: helpsWith 3/9/0 | goodVs 12/4/0 | badVs 12/2/0
 - fallback count: total 0 | helpsWith 0 / goodVs 0 / badVs 0
 - added counter anchors
-  - none
+  - goodVs 잔영의 비올레토 (EXT_잔영의_비올레토) | source legendHard | grade A | confidence 0.3596 | sampleCount 28
 
 ### 쾌속의 기수 세크레트 (SECRET)
 - counts: helpsWith 12 / goodVs 16 / badVs 14
 - A/B/C: helpsWith 5/7/0 | goodVs 13/3/0 | badVs 12/2/0
 - fallback count: total 0 | helpsWith 0 / goodVs 0 / badVs 0
 - added counter anchors
-  - none
+  - goodVs 자하크 (EXT_자하크) | source legendHard | grade A | confidence 0.3596 | sampleCount 28
 
 ## Top10 Counter Coverage Audit
 
@@ -408,9 +408,9 @@
 - goodVs anchor snapshot
   - 아키 (AKI) | source legendHard | grade A | confidence 0.4823 | sampleCount 142
   - 라스트 라이더 크라우 (LRK) | source legendHard | grade A | confidence 0.4840 | sampleCount 112
-  - 일편고월 벨로나 (EXT_일편고월_벨로나) | source legendHard | grade A | confidence 0.4569 | sampleCount 90
   - 후미르 (HUMIR) | source legendHard | grade A | confidence 0.4092 | sampleCount 80
   - 뒤틀린 망령 카일론 (TWISTED_KAYRON) | source legendHard | grade A | confidence 0.4074 | sampleCount 73
+  - 프리다 (EXT_프리다) | source legendHard | grade A | confidence 0.3896 | sampleCount 38
 - badVs anchor snapshot
   - 조장 아룬카 (ARUNKA) | source legendHard | grade A | confidence 0.7800 | sampleCount 437
   - 기원의 라스 (ORIGIN_RAS) | source legendHard | grade A | confidence 0.7800 | sampleCount 437

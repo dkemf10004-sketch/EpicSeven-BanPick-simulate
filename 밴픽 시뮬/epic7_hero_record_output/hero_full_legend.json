@@ -1,4 +1,4 @@
-﻿[
+[
   {
     "hero_code": "기원의 라스",
     "hero_code_raw": "c2001",
@@ -242,7 +242,6 @@
       "set_speed"
     ],
     "list_hard_heroes": [
-      "조장 아룬카",
       "어둠의 목자 디에네",
       "보건교사 율하"
     ],
@@ -265,7 +264,6 @@
       "set_counter"
     ],
     "list_hard_heroes": [
-      "모르트",
       "조장 아룬카",
       "보건교사 율하"
     ],
@@ -335,7 +333,6 @@
     ],
     "list_hard_heroes": [
       "보건교사 율하",
-      "리나크",
       "조장 아룬카"
     ],
     "list_with_heroes": [
@@ -564,7 +561,6 @@
       "set_max_hp"
     ],
     "list_hard_heroes": [
-      "보검의 군주 이세리아",
       "기원의 라스",
       "빛의 루엘"
     ],
@@ -772,8 +768,7 @@
     ],
     "list_hard_heroes": [
       "리나크",
-      "조장 아룬카",
-      "창공의 일리나브"
+      "조장 아룬카"
     ],
     "list_with_heroes": [
       "기원의 라스",
@@ -909,8 +904,6 @@
       "set_speed"
     ],
     "list_hard_heroes": [
-      "보건교사 율하",
-      "기원의 라스",
       "어둠의 목자 디에네"
     ],
     "list_with_heroes": [
@@ -1048,7 +1041,6 @@
       "set_torrent"
     ],
     "list_hard_heroes": [
-      "조장 아룬카",
       "보건교사 율하",
       "어둠의 목자 디에네"
     ],
@@ -1072,7 +1064,6 @@
     ],
     "list_hard_heroes": [
       "조장 아룬카",
-      "쾌속의 기수 세크레트",
       "기원의 라스"
     ],
     "list_with_heroes": [
@@ -1165,7 +1156,6 @@
     ],
     "list_hard_heroes": [
       "한낮의 유영 플랑",
-      "조장 아룬카",
       "잿빛 숲의 이세리아"
     ],
     "list_with_heroes": [
@@ -2711,7 +2701,6 @@
       "set_penetrate"
     ],
     "list_hard_heroes": [
-      "벨리안",
       "보건교사 율하",
       "조장 아룬카"
     ],

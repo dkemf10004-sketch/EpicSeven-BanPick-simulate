@@ -38,7 +38,7 @@
     .stagePanel.compact #stageHelp{font-size:12px;line-height:1.35}
     .muted{color:var(--muted)}
     .small{font-size:12px}
-    .heroGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-height:62vh;overflow:auto;padding-right:2px}
+    .heroGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:62vh;overflow:auto;padding-right:2px}
 
     .helperBox{display:grid;gap:6px;padding:10px 12px;border:1px solid #2d3b52;border-radius:12px;background:#0f172a}
     .helperLine{font-size:12px;color:#cbd5e1;line-height:1.45}
@@ -9819,15 +9819,21 @@ function renderHeroGrid(forceList=false){
       const iconPath = getHeroIconPath(hero.id);
       const summary = summarizeHeroFallback(hero.id);
       const setIcons = renderSetIcons(info.sets, 2);
-      const baseExtra = [summary, info.source === 'legend' ? 'legend fallback' : '', hero.note && hero.note.includes('외부') ? '외부/추가 영웅' : ''].filter(Boolean).join(' · ');
+      const goodVsList = getOverlayGoodVs(hero.id).slice(0,2).map(e => getHeroDisplayName(e.id)).filter(Boolean);
+      const badVsList = getOverlayBadVs(hero.id).slice(0,2).map(e => getHeroDisplayName(e.id)).filter(Boolean);
+      const goodPart = goodVsList.length ? '유리: ' + goodVsList.join(', ') : '';
+      const badPart = badVsList.length ? '불리: ' + badVsList.join(', ') : '';
+      const baseExtra = [goodPart, badPart].filter(Boolean).join(' · ');
       return `
       <div class="hero" data-hero-id="${hero.id}" data-base-extra="${encodeURIComponent(baseExtra)}" onclick="chooseHero('${hero.id}')">
         <div class="heroHead">${iconPath ? `<img class="heroCardIcon" src="${iconPath}" alt="${info.name}" loading="lazy" onerror="this.style.display='none';" />` : ''}<div class="heroName">${info.name}</div></div>
         ${setIcons}
         <div class="metrics">
-          <span class="metric">픽 ${Number(info.pick || 0).toFixed(2)}%</span>
-          <span class="metric">승 ${Number(info.win || 0).toFixed(2)}%</span>
-          <span class="metric">밴 ${Number(info.ban || 0).toFixed(2)}%</span>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <span class="metric">픽 ${Number(info.pick || 0).toFixed(1)}%</span>
+            <span class="metric">승 ${Number(info.win || 0).toFixed(1)}%</span>
+            <span class="metric">밴 ${Number(info.ban || 0).toFixed(1)}%</span>
+          </div>
         </div>
         <div class="tiny" data-role="hero-extra">${baseExtra}</div>
       </div>`;
@@ -9980,7 +9986,6 @@ connectWebSocket();
 </script>
 </body>
 </html>
-
 
 
 

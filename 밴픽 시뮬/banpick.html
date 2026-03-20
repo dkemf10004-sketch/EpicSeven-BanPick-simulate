@@ -7698,9 +7698,10 @@ function slotHTML(heroId, ownerKey, cls='', isVanguard=false){
   if(!heroId) return `<div class="slot ${cls}${vgClass}">${vgBadge}<div class="${isVanguard ? 'vgEmpty' : 'tiny'}">${isVanguard ? '밴가드 슬롯 · 최종 밴 불가' : '빈 슬롯'}</div></div>`;
   const heroName = getHeroDisplayName(heroId);
   const iconPath = getHeroIconPath(heroId);
-  const removeHtml = ownerKey ? `<div class="x"><button class="btn" style="padding:3px 6px;font-size:11px" onclick="removeFromStage('${ownerKey}','${heroId}')">삭제</button></div>` : '';
+  const removeHtml = ownerKey ? `<button class="btn" style="position:absolute;top:4px;right:4px;padding:2px 5px;font-size:10px;z-index:3;opacity:0.85" onclick="removeFromStage('${ownerKey}','${heroId}')">✕</button>` : '';
   const hintText = isVanguard ? '최종 밴 불가' : '';
-  return `<div class="slot filled ${cls}${vgClass}">${vgBadge}
+  return `<div class="slot filled ${cls}${vgClass}" style="position:relative">${vgBadge}
+    ${removeHtml}
     <div class="slotMedia${iconPath ? '' : ' no-icon'}">
       ${iconPath ? `<img class="hero-slot-icon" src="${iconPath}" alt="${heroName}" onerror="this.style.display='none';this.parentElement.classList.add('icon-failed');" />` : ''}
       <div class="slotFallbackText">${heroName}</div>
@@ -7708,7 +7709,6 @@ function slotHTML(heroId, ownerKey, cls='', isVanguard=false){
     </div>
     <div class="slotForeground">
       <div class="${isVanguard ? 'vgHint' : 'tiny'}">${hintText}</div>
-      ${removeHtml}
     </div>
   </div>`;
 }

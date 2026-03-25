@@ -115,9 +115,9 @@
     .foot{font-size:11px;color:#94a3b8;line-height:1.55}
 
     /* v5.2 vertical board overrides */
-    .grid{grid-template-columns:392px 1fr 340px;align-items:start}
-    .boardVertical{display:grid;grid-template-columns:220px 1fr 220px;gap:14px;align-items:start}
-    .draftBoardPanel,.centerMatchPanel{width:95%;justify-self:center}
+    .grid{grid-template-columns:380px 1fr 380px;align-items:start}
+    .boardVertical{display:grid;grid-template-columns:1fr 150px 1fr;gap:14px;align-items:start}
+    .draftBoardPanel,.centerMatchPanel{width:100%}
     .teamLane{display:grid;gap:8px}
     .teamHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
     .teamSlots{display:grid;grid-template-columns:1fr;gap:8px}
@@ -138,10 +138,17 @@
     .compactPreban{display:grid;gap:8px}
     .compactPreRow{display:grid;gap:4px}
     #myPrebanSlots,#oppPrebanSlots{display:flex;gap:6px;flex-wrap:wrap}
-    #myPrebanSlots .slot,#oppPrebanSlots .slot{min-height:36px;padding:6px 8px;font-size:11px}
+    #myPrebanSlots .slot,#oppPrebanSlots .slot{min-height:44px;width:auto;flex-direction:row;align-items:center;justify-content:flex-start;gap:6px;padding:5px 8px;font-size:11px}
+    #myPrebanSlots .slot .slotMedia,#oppPrebanSlots .slot .slotMedia{position:relative;inset:auto;width:32px;height:32px;flex:0 0 32px;border-radius:7px;overflow:hidden;pointer-events:none}
+    #myPrebanSlots .slot .slotMedia .hero-slot-icon,#oppPrebanSlots .slot .slotMedia .hero-slot-icon{width:100%;height:100%;object-fit:cover}
+    #myPrebanSlots .slot .slotMedia::after,#oppPrebanSlots .slot .slotMedia::after{display:none}
+    #myPrebanSlots .slot .slotNameOverlay,#oppPrebanSlots .slot .slotNameOverlay{position:static;background:none;border:none;padding:0;font-size:11px;font-weight:800;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px}
+    #myPrebanSlots .slot .slotForeground,#oppPrebanSlots .slot .slotForeground{display:none}
+    #myPrebanSlots .slot .slotFallbackText,#oppPrebanSlots .slot .slotFallbackText{display:none!important}
+    #myPrebanSlots .slot button,#oppPrebanSlots .slot button{position:static!important;flex:0 0 auto;margin-left:auto;padding:2px 5px!important;font-size:10px}
     #actualPrebanChips{display:flex;gap:6px;flex-wrap:wrap}
     #myPickSlots,#oppPickSlots{display:grid;grid-template-columns:1fr;gap:8px}
-    #finalBanSlots{display:grid;grid-template-columns:1fr;gap:8px}
+    #finalBanSlots{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
     .prebanInlineText{font-size:11px;color:#cbd5e1;line-height:1.5;text-align:center}
     .synergyRows{display:grid;gap:8px}
     .synergyRow{display:grid;grid-template-columns:190px 1fr;gap:10px;align-items:center}
@@ -262,7 +269,7 @@
               <div class="prebanInlineText" id="prebanInlineText">프리밴 실제 제외 0명</div>
             </div>
             <div class="miniStrip">
-              <div class="miniLabel">최종 밴</div>
+              <div class="miniLabel">프리밴</div>
               <div class="finalBanStack" id="finalBanSlots"></div>
             </div>
             <div class="avgNote">주의: 아래 추천과 영웅 카드의 픽률·승률·밴률은 <b>현재 밴픽 상황의 실시간 수치가 아니라 레전드 구간 평균 메타 지표</b>입니다. 현재 조합 맥락 보정과 밴가드 보정은 별도 점수로 반영됩니다.</div>
@@ -7775,11 +7782,15 @@ function renderBoard(){
   for(let i=0;i<5;i++) oppHtml += slotHTML(opp[i], findOwnerKeyByHero(opp[i], 'opp'), 'opp', i===2);
   document.getElementById('myPickSlots').innerHTML = myHtml;
   document.getElementById('oppPickSlots').innerHTML = oppHtml;
-  const myFinal = (state.stageData.myFinalBan||[])[0];
-  const oppFinal = (state.stageData.oppFinalBan||[])[0];
-  document.getElementById('finalBanSlots').innerHTML = `
-    <div><div class="miniLabel">내가 상대에게 밴</div>${slotHTML(myFinal,'myFinalBan','opp')}</div>
-    <div><div class="miniLabel">상대가 내게 밴</div>${slotHTML(oppFinal,'oppFinalBan','mine')}</div>`;
+  const preBanIds = actualPrebans();
+  document.getElementById('finalBanSlots').innerHTML = preBanIds.length
+    ? preBanIds.map(id => {
+        const name = getHeroDisplayName(id);
+        const icon = getHeroIconPath(id);
+        const img = icon ? `<img src="${icon}" alt="${name}" onerror="this.style.display='none';" style="width:22px;height:22px;border-radius:5px;object-fit:cover;flex:0 0 22px;" />` : '';
+        return `<span class="tinyChip" style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px 3px 4px;">${img}${name}</span>`;
+      }).join('')
+    : '<span class="tiny muted">프리밴 없음</span>';
   document.getElementById('mySummary').textContent = `내 ${myFilledCount}/5`;
   document.getElementById('oppSummary').textContent = `상대 ${oppFilledCount}/5`;
   document.getElementById('draftStatus').textContent = `내 ${myFilledCount}/5픽 · 상대 ${oppFilledCount}/5픽`;
@@ -9986,6 +9997,20 @@ connectWebSocket();
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
